@@ -13,7 +13,7 @@ import { EditRedirectModal } from './components/EditRedirectModal';
 import { NfcAssistantModal } from './components/NfcAssistantModal';
 import { PlatePreviewModal } from './components/PlatePreviewModal';
 import { RedirectSimulatorModal } from './components/RedirectSimulatorModal';
-import { LoginModal } from './components/LoginModal';
+import { LoginScreen } from './components/LoginScreen';
 import { StorageService } from './services/storageService';
 import {
   PlateTemplate,
@@ -35,21 +35,22 @@ import {
   ShieldAlert,
   Database,
   RefreshCw,
-  Plus
+  Plus,
+  Loader2
 } from 'lucide-react';
 
 export default function App() {
-  // App state initialized immediately with cached records to prevent layout flicker
+  // Authentication & Session state
+  const [user, setUser] = useState<AuthUser | null>(() => StorageService.getAuthUser());
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // App data state
   const [templates, setTemplates] = useState<PlateTemplate[]>(() => StorageService.getTemplates());
   const [plates, setPlates] = useState<PhysicalPlate[]>(() => StorageService.getPlates());
   const [redirects, setRedirects] = useState<DynamicRedirect[]>(() => StorageService.getRedirects());
   const [analytics, setAnalytics] = useState<AnalyticsLog[]>(() => StorageService.getAnalytics());
   const [activeTab, setActiveTab] = useState<'dashboard' | 'inventory' | 'templates' | 'simulator'>('dashboard');
-
-  // Supabase Auth & Session state
-  const [user, setUser] = useState<AuthUser | null>(() => StorageService.getAuthUser());
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
 
   // Modals state
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
@@ -97,15 +98,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    // 1. Check session
-    StorageService.verifyAuth().then((authUser) => {
-      if (authUser) setUser(authUser);
-    });
-
-    // 2. Fetch real data from Supabase
-    loadDataFromBackend();
-
-    // 3. Check if path is /r/:slug
+    // 1. Check if path is /r/:slug (Public client redirect always works without admin login)
     if (typeof window !== 'undefined') {
       const pathname = window.location.pathname;
       const match = pathname.match(/^\/r\/([^/?#]+)/i);
@@ -113,8 +106,25 @@ export default function App() {
         const slug = decodeURIComponent(match[1]);
         setClientRedirectSlug(slug);
         StorageService.recordClick(slug);
+        setIsCheckingAuth(false);
+        return;
       }
     }
+
+    // 2. Verify admin session with Supabase
+    StorageService.verifyAuth()
+      .then((authUser) => {
+        setUser(authUser);
+        if (authUser) {
+          loadDataFromBackend();
+        }
+      })
+      .catch(() => {
+        setUser(null);
+      })
+      .finally(() => {
+        setIsCheckingAuth(false);
+      });
   }, []);
 
   // Automatic countdown redirection when visiting /r/:slug for standard active URLs
@@ -148,7 +158,6 @@ export default function App() {
 
   const handleBatchCreated = async (newPlates: PhysicalPlate[], newRedirects: DynamicRedirect[]) => {
     try {
-      // Direct atomic transaction with Supabase backend
       await fetch('/api/plates/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -188,7 +197,9 @@ export default function App() {
     showToast('Dados sincronizados com o banco na nuvem!');
   };
 
-  // If user opened directly via /r/:slug, render customer redirect landing
+  // =========================================================================
+  // 1. PUBLIC ROUTE: Customer scanned a physical plate (/r/:slug)
+  // =========================================================================
   if (clientRedirectSlug) {
     const item = StorageService.getRedirectBySlug(clientRedirectSlug);
 
@@ -334,6 +345,43 @@ export default function App() {
     );
   }
 
+  // =========================================================================
+  // 2. LOADING STATE: Checking existing session
+  // =========================================================================
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-12 w-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-xl shadow-indigo-600/10">
+            <QrCode className="h-6 w-6 animate-pulse" />
+          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-400" />
+            <span>Verificando credenciais do PlateFlow...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // 3. AUTHENTICATION GATE: User is NOT logged in -> Require Supabase Login
+  // =========================================================================
+  if (!user) {
+    return (
+      <LoginScreen
+        onLoginSuccess={(loggedUser) => {
+          setUser(loggedUser);
+          loadDataFromBackend();
+          showToast(`Bem-vindo ao PlateFlow, ${loggedUser.email}!`);
+        }}
+      />
+    );
+  }
+
+  // =========================================================================
+  // 4. PROTECTED ADMIN PANEL: User is authenticated
+  // =========================================================================
   const stats = StorageService.getStats();
 
   return (
@@ -353,11 +401,11 @@ export default function App() {
         onOpenBatchModal={() => setIsBatchModalOpen(true)}
         onResetData={handleResetData}
         user={user}
-        onOpenLogin={() => setIsLoginModalOpen(true)}
+        onOpenLogin={() => {}}
         onLogout={() => {
           StorageService.logout();
           setUser(null);
-          showToast('Sessão encerrada.');
+          showToast('Sessão encerrada com sucesso.');
         }}
       />
 
@@ -546,17 +594,6 @@ export default function App() {
           onRecordScan={handleRecordScan}
         />
       )}
-
-      {/* 6. Admin Login Modal */}
-      <LoginModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-        onLoginSuccess={(loggedUser) => {
-          setUser(loggedUser);
-          setIsLoginModalOpen(false);
-          showToast(`Autenticado com sucesso como ${loggedUser.email}!`);
-        }}
-      />
     </div>
   );
 }
