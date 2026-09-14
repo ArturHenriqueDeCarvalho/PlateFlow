@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "PlateFlow - Gestão de Placas NFC & QR",
+  "short_name": "PlateFlow",
+  "description": "PlateFlow: Sistema PWA de gerenciamento de QR Codes dinâmicos e tags NFC com carimbo gráfico em lote para gráficas e métricas em tempo real.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#0f172a",
+  "background_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

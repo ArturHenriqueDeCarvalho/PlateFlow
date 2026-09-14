@@ -1,0 +1,6 @@
+{
+  "name": "PlateFlow",
+  "description": "Sistema PWA de gerenciamento de QR Codes dinâmicos e tags NFC com carimbo gráfico em lote para gráficas e métricas em tempo real.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
