@@ -1,33 +1,47 @@
-import express from 'express';
+import 'dotenv/config';
 import path from 'path';
-import { app, seedDefaultTemplates } from './api/index.ts';
+import { app } from './apps/plateflow-api/src/server.js';
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3005;
 
-// ==========================================
-// VITE MIDDLEWARE & SERVER STARTUP
-// ==========================================
 async function startServer() {
-  await seedDefaultTemplates();
-
   if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
+      root: path.resolve(process.cwd(), 'apps/plateflow-app'),
       server: { middlewareMode: true },
       appType: 'spa',
     });
-    app.use(vite.middlewares);
+
+    app.addHook('onRequest', async (req, reply) => {
+      const url = req.raw.url || '';
+      // Delegate any non-API and non-shortlink route to Vite dev server
+      if (!url.startsWith('/api') && !url.startsWith('/r/')) {
+        return new Promise<void>((resolve) => {
+          vite.middlewares(req.raw, reply.raw, () => {
+            resolve();
+          });
+        });
+      }
+    });
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+    const fs = await import('fs');
+    app.setNotFoundHandler(async (req, reply) => {
+      const url = req.raw.url || '';
+      if (!url.startsWith('/api') && !url.startsWith('/r/')) {
+        const indexPath = path.join(distPath, 'index.html');
+        if (fs.existsSync(indexPath)) {
+          const html = fs.readFileSync(indexPath, 'utf-8');
+          return reply.type('text/html').send(html);
+        }
+      }
+      return reply.status(404).send('Página não encontrada');
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
-  });
+  await app.listen({ port: PORT, host: '0.0.0.0' });
+  console.log(`⚡ PlateFlow Fastify running at http://localhost:${PORT}`);
 }
 
 if (!process.env.VERCEL) {
