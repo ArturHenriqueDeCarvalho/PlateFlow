@@ -36,23 +36,82 @@ app.use((req, _res, next) => {
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
-// Database connection setup
-const DATABASE_URL =
-  process.env.DATABASE_URL ||
-  'postgresql://postgres:Qr-code!1234@db.yjwlyaaumicsjjspttuc.supabase.co:5432/postgres';
-
-const pool = new pg.Pool({
-  connectionString: DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-  max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
+// 3. Serverless route prefix normalization
+app.use((req, _res, next) => {
+  if (req.url && !req.url.startsWith('/api') && !req.url.startsWith('/r/')) {
+    req.url = '/api' + (req.url.startsWith('/') ? req.url : '/' + req.url);
+  }
+  next();
 });
 
-// Admin Authentication Secret & default credentials
+// ==========================================
+// DATABASE & SERVERLESS POOL CONFIGURATION
+// ==========================================
+function getDatabaseUrl(): string | undefined {
+  const rawUrl = process.env.DATABASE_URL;
+  if (!rawUrl) return undefined;
+
+  // Remove sslmode query param if present so ssl: { rejectUnauthorized: false } in pg.Pool takes precedence
+  const cleanUrl = rawUrl.replace(/([?&])sslmode=[^&]+(&|$)/, '$1').replace(/[?&]$/, '');
+
+  // If the URL uses direct Supabase host db.<ref>.supabase.co, adapt to IPv4 pooler
+  // Vercel serverless functions (AWS Lambda) do not support IPv6-only outbound connections
+  const supabaseDirectRegex = /postgres(?:ql)?:\/\/([^:]+):([^@]+)@db\.([a-z0-9]+)\.supabase\.co(?::5432)?\/([^?]+)/;
+  const match = cleanUrl.match(supabaseDirectRegex);
+  if (match) {
+    const [, user, pass, projectRef, dbName] = match;
+    const poolerUser = user.includes('.') ? user : `${user}.${projectRef}`;
+    return `postgresql://${poolerUser}:${pass}@aws-0-sa-east-1.pooler.supabase.com:6543/${dbName}`;
+  }
+
+  return cleanUrl;
+}
+
+export function sanitizeErrorMessage(msg: string): string {
+  if (!msg) return 'Erro desconhecido';
+  return msg
+    .replace(/postgres(?:ql)?:\/\/[^@]+@/gi, 'postgresql://***:***@')
+    .replace(/password=[^\s&]+/gi, 'password=***');
+}
+
+let poolInstance: pg.Pool | null = null;
+
+function getPool(): pg.Pool | null {
+  const connStr = getDatabaseUrl();
+  if (!connStr) return null;
+
+  if (!poolInstance) {
+    poolInstance = new pg.Pool({
+      connectionString: connStr,
+      ssl: { rejectUnauthorized: false },
+      max: 1, // Single connection per serverless instance to prevent connection starvation
+      idleTimeoutMillis: 5000,
+      connectionTimeoutMillis: 4000,
+    });
+    poolInstance.on('error', (err) => {
+      console.error('[v0] Erro de conexão com o banco:', sanitizeErrorMessage(err.message));
+    });
+  }
+  return poolInstance;
+}
+
+const pool = {
+  query: (text: string, params?: any[]) => {
+    const p = getPool();
+    if (!p) throw new Error('DATABASE_URL não configurada no servidor.');
+    return p.query(text, params);
+  },
+  connect: () => {
+    const p = getPool();
+    if (!p) throw new Error('DATABASE_URL não configurada no servidor.');
+    return p.connect();
+  },
+};
+
+// Admin Authentication Secret & credentials read EXCLUSIVELY from environment variables
 const JWT_SECRET = process.env.JWT_SECRET || 'nfc-qr-pro-super-secret-key-2026';
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'arturcaarvalho@gmail.com';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Qr-code!1234';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 function generateToken(payload: { email: string; role: string }) {
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
@@ -202,12 +261,27 @@ app.post(['/api/auth/login', '/auth/login'], async (req, res) => {
     const cleanEmail = String(email).trim().toLowerCase();
     const cleanPassword = String(password);
 
-    // Check against master admin credentials
+    // [v0] Log de recebimento da requisição de login
+    console.log('[v0] Recebida requisição de login para:', cleanEmail);
+
+    // [v0] Log de presença das variáveis necessárias (sem imprimir valores)
+    console.log(
+      '[v0] Verificação de variáveis de ambiente:',
+      'ADMIN_EMAIL configurado =', Boolean(ADMIN_EMAIL),
+      '| ADMIN_PASSWORD configurado =', Boolean(ADMIN_PASSWORD),
+      '| DATABASE_URL configurada =', Boolean(process.env.DATABASE_URL)
+    );
+
+    // Validação estrita lendo EXCLUSIVAMENTE de process.env
     const isMasterAdmin =
-      (cleanEmail === ADMIN_EMAIL.toLowerCase() || cleanEmail === 'admin@admin.com') &&
-      (cleanPassword === ADMIN_PASSWORD || cleanPassword === '123456');
+      Boolean(ADMIN_EMAIL) &&
+      Boolean(ADMIN_PASSWORD) &&
+      cleanEmail === ADMIN_EMAIL!.trim().toLowerCase() &&
+      cleanPassword === ADMIN_PASSWORD!;
 
     if (isMasterAdmin) {
+      // [v0] Log do resultado da validação
+      console.log('[v0] Resultado da validação: Sucesso (Master Admin autenticado via process.env)');
       const token = generateToken({ email: cleanEmail, role: 'admin' });
       return res.json({
         success: true,
@@ -220,13 +294,17 @@ app.post(['/api/auth/login', '/auth/login'], async (req, res) => {
       });
     }
 
-    // Check if user exists in auth.users in Supabase (if created via Supabase dashboard)
+    console.log('[v0] Resultado da validação: Não corresponde ao Master Admin. Verificando fallback no banco...');
+
+    // Fallback: Check if user exists in auth.users in Supabase (if created via Supabase dashboard)
     try {
       const authRes = await pool.query(
         'SELECT id, email FROM auth.users WHERE email = $1 LIMIT 1',
         [cleanEmail]
       );
-      if (authRes.rows.length > 0 && cleanPassword === ADMIN_PASSWORD) {
+      if (authRes.rows.length > 0 && ADMIN_PASSWORD && cleanPassword === ADMIN_PASSWORD) {
+        // [v0] Log do resultado da validação via banco
+        console.log('[v0] Resultado da validação: Sucesso (Usuário autenticado via auth.users)');
         const token = generateToken({ email: authRes.rows[0].email, role: 'admin' });
         return res.json({
           success: true,
@@ -238,15 +316,18 @@ app.post(['/api/auth/login', '/auth/login'], async (req, res) => {
           },
         });
       }
-    } catch {
-      // Continue fallback
+    } catch (dbErr: any) {
+      // [v0] Log de erro de conexão com o banco sem expor credenciais
+      console.error('[v0] Erro de conexão com o banco:', sanitizeErrorMessage(dbErr?.message || 'Falha de conexão com PostgreSQL'));
     }
 
+    // [v0] Log de resultado de validação falha
+    console.log('[v0] Resultado da validação: Falha (Credenciais inválidas)');
     return res.status(401).json({ error: 'Credenciais inválidas. Verifique o email e senha digitados.' });
   } catch (err: any) {
-    console.error('Login process error:', err);
+    console.error('[v0] Erro no processamento de login:', sanitizeErrorMessage(err?.message || 'Erro desconhecido'));
     return res.status(500).json({
-      error: 'Erro interno durante autenticação: ' + (err?.message || 'Erro desconhecido'),
+      error: 'Erro interno durante autenticação: ' + sanitizeErrorMessage(err?.message || 'Erro desconhecido'),
     });
   }
 });
