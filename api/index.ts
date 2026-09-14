@@ -82,9 +82,9 @@ function getPool(): pg.Pool | null {
     poolInstance = new pg.Pool({
       connectionString: connStr,
       ssl: { rejectUnauthorized: false },
-      max: 1, // Single connection per serverless instance to prevent connection starvation
-      idleTimeoutMillis: 5000,
-      connectionTimeoutMillis: 4000,
+      max: 4,
+      idleTimeoutMillis: 10000,
+      connectionTimeoutMillis: 10000,
     });
     poolInstance.on('error', (err) => {
       console.error('Erro de conexão com o banco:', sanitizeErrorMessage(err.message));
@@ -325,7 +325,11 @@ app.get(['/api/auth/me', '/auth/me'], (req, res) => {
 // ==========================================
 app.get('/api/templates', async (_req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM templates ORDER BY created_at ASC');
+    let result = await pool.query('SELECT * FROM templates ORDER BY created_at ASC');
+    if (result.rows.length === 0) {
+      await seedDefaultTemplates();
+      result = await pool.query('SELECT * FROM templates ORDER BY created_at ASC');
+    }
     const templates = result.rows.map((row) => ({
       id: row.id,
       name: row.name,
@@ -480,7 +484,11 @@ app.post('/api/plates/batch', async (req, res) => {
     await client.query('BEGIN');
 
     // 1. Fetch all valid template IDs in the database to prevent foreign key errors
-    const validTemplatesRes = await client.query('SELECT id FROM templates');
+    let validTemplatesRes = await client.query('SELECT id FROM templates');
+    if (validTemplatesRes.rows.length === 0) {
+      await seedDefaultTemplates();
+      validTemplatesRes = await client.query('SELECT id FROM templates');
+    }
     const validTemplateIds = new Set(validTemplatesRes.rows.map((r) => r.id));
 
     for (const plate of plates) {
@@ -503,15 +511,22 @@ app.post('/api/plates/batch', async (req, res) => {
           plate.id || `plate-${plate.slug}`,
           plate.slug,
           plate.batchIdentifier || 'LOTE-PADRAO',
-          plate.plateNumber || 1,
+          parseInt(plate.plateNumber, 10) || 1,
           finalTemplateId,
-          plate.nfcWritten || false,
+          Boolean(plate.nfcWritten),
           plate.customerNotes || '',
         ]
       );
     }
 
     for (const red of redirects) {
+      const metaString =
+        typeof red.metadata === 'object' && red.metadata !== null
+          ? JSON.stringify(red.metadata)
+          : typeof red.metadata === 'string' && red.metadata.trim().startsWith('{')
+          ? red.metadata
+          : '{}';
+
       await client.query(
         `INSERT INTO redirects (id, slug, plate_id, destination_url, redirect_type, status, title, clicks, metadata)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -530,8 +545,8 @@ app.post('/api/plates/batch', async (req, res) => {
           red.type || 'url',
           red.status || 'virgin',
           red.title || `Placa #${red.slug}`,
-          red.clicks || 0,
-          JSON.stringify(red.metadata || {}),
+          parseInt(red.clicks, 10) || 0,
+          metaString,
         ]
       );
     }
@@ -539,7 +554,12 @@ app.post('/api/plates/batch', async (req, res) => {
     await client.query('COMMIT');
     res.json({ success: true, count: plates.length });
   } catch (err: any) {
-    await client.query('ROLLBACK');
+    try {
+      await client.query('ROLLBACK');
+    } catch {
+      // ignore rollback failure
+    }
+    console.error('Erro no endpoint POST /api/plates/batch:', err);
     res.status(500).json({ error: sanitizeErrorMessage(err.message) });
   } finally {
     client.release();
