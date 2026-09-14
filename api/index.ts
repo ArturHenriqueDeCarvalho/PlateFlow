@@ -143,12 +143,10 @@ function verifyToken(token: string) {
   }
 }
 
-// Auto-seed default templates if empty
+// Auto-seed default templates if not present
 export async function seedDefaultTemplates() {
   try {
-    const res = await pool.query('SELECT COUNT(*) FROM templates');
-    if (parseInt(res.rows[0].count, 10) === 0) {
-      const defaultSvg1 = `data:image/svg+xml;utf8,${encodeURIComponent(`
+    const defaultSvg1 = `data:image/svg+xml;utf8,${encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1600" width="1200" height="1600">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -174,7 +172,7 @@ export async function seedDefaultTemplates() {
 </svg>
 `)}`;
 
-      const defaultSvg2 = `data:image/svg+xml;utf8,${encodeURIComponent(`
+    const defaultSvg2 = `data:image/svg+xml;utf8,${encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1600" width="1200" height="1600">
   <defs>
     <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -192,25 +190,25 @@ export async function seedDefaultTemplates() {
 </svg>
 `)}`;
 
-      await pool.query(
-        `INSERT INTO templates (
-          id, name, description, width_mm, height_mm, qr_x_mm, qr_y_mm, qr_size_mm,
-          background_width, background_height, qr_x, qr_y, qr_size, badge_color, background_url
-        ) VALUES 
-        ($1, $2, $3, 100, 150, 25, 45, 50, 1200, 1600, 380, 490, 440, '#fbbf24', $4),
-        ($5, $6, $7, 100, 150, 25, 45, 50, 1200, 1600, 380, 470, 440, '#2563eb', $8)`,
-        [
-          'tmpl-google-gold',
-          'Placa Acrílica Black & Gold - Google Reviews',
-          'Template premium para mesas de restaurantes e balcões com chamada para avaliação 5 estrelas.',
-          defaultSvg1,
-          'tmpl-menu-pix',
-          'Totem Minimalista Mesa - Cardápio & Pix',
-          'Design limpo e claro com moldura reforçada para leitura rápida de pedidos e chave Pix.',
-          defaultSvg2,
-        ]
-      );
-    }
+    await pool.query(
+      `INSERT INTO templates (
+        id, name, description, width_mm, height_mm, qr_x_mm, qr_y_mm, qr_size_mm,
+        background_width, background_height, qr_x, qr_y, qr_size, badge_color, background_url
+      ) VALUES 
+      ($1, $2, $3, 100, 150, 25, 45, 50, 1200, 1600, 380, 490, 440, '#fbbf24', $4),
+      ($5, $6, $7, 100, 150, 25, 45, 50, 1200, 1600, 380, 470, 440, '#2563eb', $8)
+      ON CONFLICT (id) DO NOTHING`,
+      [
+        'tmpl-google-gold',
+        'Placa Acrílica Black & Gold - Google Reviews',
+        'Template premium para mesas de restaurantes e balcões com chamada para avaliação 5 estrelas.',
+        defaultSvg1,
+        'tmpl-menu-pix',
+        'Totem Minimalista Mesa - Cardápio & Pix',
+        'Design limpo e claro com moldura reforçada para leitura rápida de pedidos e chave Pix.',
+        defaultSvg2,
+      ]
+    );
   } catch (err: any) {
     console.error('Error checking/seeding templates:', err.message);
   }
@@ -481,7 +479,17 @@ app.post('/api/plates/batch', async (req, res) => {
   try {
     await client.query('BEGIN');
 
+    // 1. Fetch all valid template IDs in the database to prevent foreign key errors
+    const validTemplatesRes = await client.query('SELECT id FROM templates');
+    const validTemplateIds = new Set(validTemplatesRes.rows.map((r) => r.id));
+
     for (const plate of plates) {
+      let finalTemplateId = plate.templateId;
+      if (finalTemplateId && !validTemplateIds.has(finalTemplateId)) {
+        // Fallback to null or existing template to prevent foreign key constraint violation
+        finalTemplateId = validTemplateIds.size > 0 ? Array.from(validTemplateIds)[0] : null;
+      }
+
       await client.query(
         `INSERT INTO plates (id, slug, batch_identifier, plate_number, template_id, nfc_written, customer_notes)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -492,11 +500,11 @@ app.post('/api/plates/batch', async (req, res) => {
            customer_notes = EXCLUDED.customer_notes,
            updated_at = NOW()`,
         [
-          plate.id,
+          plate.id || `plate-${plate.slug}`,
           plate.slug,
-          plate.batchIdentifier,
-          plate.plateNumber,
-          plate.templateId,
+          plate.batchIdentifier || 'LOTE-PADRAO',
+          plate.plateNumber || 1,
+          finalTemplateId,
           plate.nfcWritten || false,
           plate.customerNotes || '',
         ]
@@ -515,13 +523,13 @@ app.post('/api/plates/batch', async (req, res) => {
            metadata = EXCLUDED.metadata,
            updated_at = NOW()`,
         [
-          red.id,
+          red.id || `red-${red.slug}`,
           red.slug,
-          red.plateId,
+          red.plateId || null,
           red.destinationUrl || '',
-          red.type || 'custom',
+          red.type || 'url',
           red.status || 'virgin',
-          red.title || '',
+          red.title || `Placa #${red.slug}`,
           red.clicks || 0,
           JSON.stringify(red.metadata || {}),
         ]

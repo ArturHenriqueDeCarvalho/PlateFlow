@@ -158,16 +158,25 @@ export default function App() {
 
   const handleBatchCreated = async (newPlates: PhysicalPlate[], newRedirects: DynamicRedirect[]) => {
     try {
-      await fetch('/api/plates/batch', {
+      const token = localStorage.getItem('plateflow_auth_token');
+      const res = await fetch('/api/plates/batch', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ plates: newPlates, redirects: newRedirects }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Erro do servidor (${res.status})`);
+      }
       await loadDataFromBackend();
       showToast(`Lote de ${newPlates.length} placas gravado no Supabase com sucesso!`);
-    } catch {
+    } catch (err: any) {
+      console.error('Erro ao salvar lote no Supabase:', err);
+      showToast(`Atenção: ${err.message || 'Falha ao sincronizar com banco'}`);
       await loadDataFromBackend();
-      showToast(`Lote gerado com sucesso.`);
     }
   };
 
