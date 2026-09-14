@@ -1,10 +1,10 @@
 import app from '../server';
 
 export default function handler(req: any, res: any) {
-  // When running on Vercel with rewrites, Vercel sets x-forwarded-uri with the original requested path
-  const originalUrl = req.headers['x-forwarded-uri'] || req.headers['x-matched-path'];
-  if (originalUrl) {
-    req.url = originalUrl;
+  // Support rewritten paths (__route), custom headers, or default url
+  const targetRoute = req.query?.__route || req.headers['x-forwarded-uri'];
+  if (targetRoute) {
+    req.url = targetRoute;
   }
   return app(req, res);
 }

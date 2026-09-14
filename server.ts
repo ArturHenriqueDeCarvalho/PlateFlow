@@ -6,7 +6,35 @@ import pg from 'pg';
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+// 1. CORS headers for cross-origin or preview deployments
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
+
+// 2. Vercel serverless request body normalization
+app.use((req, _res, next) => {
+  if (req.body) {
+    if (typeof req.body === 'string') {
+      try {
+        req.body = JSON.parse(req.body);
+      } catch {
+        // keep as is
+      }
+    }
+    // Flag to prevent body-parser from re-reading an already consumed stream
+    (req as any)._body = true;
+  }
+  next();
+});
+
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
 // Database connection setup
 const DATABASE_URL =
@@ -154,67 +182,90 @@ app.get('/api/health', async (_req, res) => {
 // ==========================================
 // 2. AUTHENTICATION (SUPABASE AUTH / ADMIN)
 // ==========================================
-app.post('/api/auth/login', async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email e senha são obrigatórios.' });
-  }
-
-  // Check against master admin credentials
-  const isMasterAdmin =
-    (email.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase() ||
-      email.trim().toLowerCase() === 'admin@admin.com') &&
-    (password === ADMIN_PASSWORD || password === '123456');
-
-  if (isMasterAdmin) {
-    const token = generateToken({ email: email.trim().toLowerCase(), role: 'admin' });
-    return res.json({
-      success: true,
-      token,
-      user: {
-        email: email.trim().toLowerCase(),
-        role: 'admin',
-        name: 'Administrador Pro',
-      },
-    });
-  }
-
-  // Check if user exists in auth.users in Supabase (if created via Supabase dashboard)
+app.post(['/api/auth/login', '/auth/login'], async (req, res) => {
   try {
-    const authRes = await pool.query(
-      'SELECT id, email FROM auth.users WHERE email = $1 LIMIT 1',
-      [email.trim().toLowerCase()]
-    );
-    if (authRes.rows.length > 0 && password === ADMIN_PASSWORD) {
-      const token = generateToken({ email: authRes.rows[0].email, role: 'admin' });
+    let body = req.body;
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch {
+        body = {};
+      }
+    }
+    const email = body?.email;
+    const password = body?.password;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email e senha são obrigatórios.' });
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanPassword = String(password);
+
+    // Check against master admin credentials
+    const isMasterAdmin =
+      (cleanEmail === ADMIN_EMAIL.toLowerCase() || cleanEmail === 'admin@admin.com') &&
+      (cleanPassword === ADMIN_PASSWORD || cleanPassword === '123456');
+
+    if (isMasterAdmin) {
+      const token = generateToken({ email: cleanEmail, role: 'admin' });
       return res.json({
         success: true,
         token,
         user: {
-          email: authRes.rows[0].email,
+          email: cleanEmail,
           role: 'admin',
-          name: authRes.rows[0].email.split('@')[0],
+          name: 'Administrador Pro',
         },
       });
     }
-  } catch {
-    // Continue fallback
-  }
 
-  return res.status(401).json({ error: 'Credenciais inválidas. Verifique o email e senha.' });
+    // Check if user exists in auth.users in Supabase (if created via Supabase dashboard)
+    try {
+      const authRes = await pool.query(
+        'SELECT id, email FROM auth.users WHERE email = $1 LIMIT 1',
+        [cleanEmail]
+      );
+      if (authRes.rows.length > 0 && cleanPassword === ADMIN_PASSWORD) {
+        const token = generateToken({ email: authRes.rows[0].email, role: 'admin' });
+        return res.json({
+          success: true,
+          token,
+          user: {
+            email: authRes.rows[0].email,
+            role: 'admin',
+            name: authRes.rows[0].email.split('@')[0],
+          },
+        });
+      }
+    } catch {
+      // Continue fallback
+    }
+
+    return res.status(401).json({ error: 'Credenciais inválidas. Verifique o email e senha digitados.' });
+  } catch (err: any) {
+    console.error('Login process error:', err);
+    return res.status(500).json({
+      error: 'Erro interno durante autenticação: ' + (err?.message || 'Erro desconhecido'),
+    });
+  }
 });
 
-app.get('/api/auth/me', (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ authenticated: false });
+app.get(['/api/auth/me', '/auth/me'], (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ authenticated: false });
+    }
+    const token = authHeader.substring(7);
+    const user = verifyToken(token);
+    if (!user) {
+      return res.status(401).json({ authenticated: false });
+    }
+    return res.json({ authenticated: true, user });
+  } catch (err: any) {
+    return res.status(500).json({ authenticated: false, error: err.message });
   }
-  const token = authHeader.substring(7);
-  const user = verifyToken(token);
-  if (!user) {
-    return res.status(401).json({ authenticated: false });
-  }
-  return res.json({ authenticated: true, user });
 });
 
 // ==========================================
@@ -555,7 +606,7 @@ app.post('/api/analytics', async (req, res) => {
 // ==========================================
 // 6. PRODUCTION FAST REDIRECT HANDLER (/r/:slug)
 // ==========================================
-app.get('/r/:slug', async (req, res) => {
+app.get(['/r/:slug', '/api/r/:slug'], async (req, res) => {
   const { slug } = req.params;
   const userAgent = req.headers['user-agent'] || '';
   const referrer = (req.headers['referer'] || req.headers['referrer'] || '') as string;
@@ -678,6 +729,16 @@ app.get('/r/:slug', async (req, res) => {
     console.error('Redirect handler error:', err.message);
     return res.status(500).send('Erro interno ao processar redirecionamento.');
   }
+});
+
+// Global Error Handler to guarantee JSON responses and prevent unhandled 500s
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error('Global application error:', err);
+  if (res.headersSent) return;
+  res.status(err.status || 500).json({
+    error: err.message || 'Erro interno no servidor.',
+    code: err.code || 'INTERNAL_ERROR',
+  });
 });
 
 // ==========================================
