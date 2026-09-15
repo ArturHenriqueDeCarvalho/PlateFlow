@@ -99,9 +99,9 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
       });
 
       onBatchCreated(newPlates, newRedirects);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Falha ao gerar lote:', err);
-      alert('Ocorreu um erro durante a geração do lote.');
+      alert(err.message || 'Ocorreu um erro durante a geração do lote.');
     } finally {
       setIsProcessing(false);
     }

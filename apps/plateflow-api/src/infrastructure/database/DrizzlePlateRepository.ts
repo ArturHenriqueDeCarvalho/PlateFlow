@@ -1,4 +1,4 @@
-import { db, plates, eq, desc } from '@plateflow/database';
+import { db, plates, eq, desc, sql } from '@plateflow/database';
 import type { IPlateRepository } from '../../core/repositories/IPlateRepository.js';
 import type { PhysicalPlate } from '../../core/entities/index.js';
 
@@ -63,7 +63,19 @@ export class DrizzlePlateRepository implements IPlateRepository {
       updated_at: new Date(),
     }));
 
-    const rows = await db.insert(plates).values(values).returning();
+    const rows = await db
+      .insert(plates)
+      .values(values)
+      .onConflictDoUpdate({
+        target: plates.id,
+        set: {
+          customer_notes: sql`excluded.customer_notes`,
+          template_id: sql`excluded.template_id`,
+          nfc_written: sql`excluded.nfc_written`,
+          updated_at: sql`now()`,
+        },
+      })
+      .returning();
     return rows.map((r) => ({
       id: r.id,
       slug: r.slug,

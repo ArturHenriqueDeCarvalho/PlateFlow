@@ -29,9 +29,23 @@ export const ImageComposerService = {
   loadImage(src: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.crossOrigin = 'anonymous';
+      // Only set crossOrigin for remote URLs (data: and blob: are already same-origin)
+      if (!src.startsWith('data:') && !src.startsWith('blob:')) {
+        img.crossOrigin = 'anonymous';
+      }
+
       img.onload = () => resolve(img);
-      img.onerror = (err) => reject(new Error(`Falha ao carregar imagem: ${err}`));
+      img.onerror = () => {
+        // If crossOrigin failed on remote URL, retry without crossOrigin
+        if (img.crossOrigin) {
+          const retryImg = new Image();
+          retryImg.onload = () => resolve(retryImg);
+          retryImg.onerror = (err) => reject(new Error(`Falha ao carregar arte do modelo: ${err}`));
+          retryImg.src = src;
+        } else {
+          reject(new Error(`Falha ao carregar imagem: ${src.substring(0, 60)}...`));
+        }
+      };
       img.src = src;
     });
   },
@@ -87,7 +101,13 @@ export const ImageComposerService = {
       ctx.fillText(`ID: ${slug}`, canvas.width - 32, canvas.height - 24);
     }
 
-    return canvas.toDataURL('image/png', 0.95);
+    try {
+      return canvas.toDataURL('image/png', 0.95);
+    } catch (err: any) {
+      throw new Error(
+        `Não foi possível exportar a placa: a imagem do template "${template.name}" possui restrições de segurança do navegador (CORS). Faça o upload do arquivo de imagem diretamente para resolver.`
+      );
+    }
   },
 
   /**

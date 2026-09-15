@@ -52,7 +52,21 @@ export class DrizzleRedirectRepository implements IRedirectRepository {
       updated_at: new Date(),
     }));
 
-    const rows = await db.insert(redirects).values(values).returning();
+    const rows = await db
+      .insert(redirects)
+      .values(values)
+      .onConflictDoUpdate({
+        target: redirects.slug,
+        set: {
+          title: sql`excluded.title`,
+          destination_url: sql`excluded.destination_url`,
+          redirect_type: sql`excluded.redirect_type`,
+          status: sql`excluded.status`,
+          metadata: sql`excluded.metadata`,
+          updated_at: sql`now()`,
+        },
+      })
+      .returning();
     return rows.map((r) => ({
       id: r.id,
       slug: r.slug,

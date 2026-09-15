@@ -5,8 +5,10 @@ import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from './schema/index.js';
 
 // Load root or local .env
-dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
-dotenv.config();
+if (!process.env.VERCEL) {
+  dotenv.config({ path: path.resolve(process.cwd(), '../../.env'), quiet: true });
+  dotenv.config({ quiet: true });
+}
 
 export function sanitizeErrorMessage(msg: string): string {
   if (!msg) return 'Erro desconhecido';

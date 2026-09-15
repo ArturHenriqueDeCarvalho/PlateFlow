@@ -170,10 +170,10 @@ export default function App() {
         throw new Error(data.error || `Erro do servidor (${res.status})`);
       }
       await loadDataFromBackend();
-      showToast(`Lote de ${newPlates.length} placas gerado.`);
+      showToast(`Lote de ${newPlates.length} placas gerado com sucesso.`);
     } catch (err: any) {
       console.error('Erro ao salvar lote:', err);
-      showToast(`Erro ao gravar lote.`);
+      showToast(`Erro ao gravar lote: ${err.message || 'Falha no servidor'}`);
       await loadDataFromBackend();
     }
   };

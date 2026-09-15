@@ -1,4 +1,4 @@
-import { db, templates, eq, desc } from '@plateflow/database';
+import { db, templates, eq, desc, sql } from '@plateflow/database';
 import type { ITemplateRepository } from '../../core/repositories/ITemplateRepository.js';
 import type { PlateTemplate } from '../../core/entities/index.js';
 
@@ -37,7 +37,32 @@ export class DrizzleTemplateRepository implements ITemplateRepository {
       updated_at: new Date(),
     };
 
-    const rows = await db.insert(templates).values(values).returning();
+    const rows = await db
+      .insert(templates)
+      .values(values)
+      .onConflictDoUpdate({
+        target: templates.id,
+        set: {
+          name: sql`excluded.name`,
+          description: sql`excluded.description`,
+          background_url: sql`excluded.background_url`,
+          background_width: sql`excluded.background_width`,
+          background_height: sql`excluded.background_height`,
+          qr_x: sql`excluded.qr_x`,
+          qr_y: sql`excluded.qr_y`,
+          qr_size: sql`excluded.qr_size`,
+          width_mm: sql`excluded.width_mm`,
+          height_mm: sql`excluded.height_mm`,
+          qr_x_mm: sql`excluded.qr_x_mm`,
+          qr_y_mm: sql`excluded.qr_y_mm`,
+          qr_size_mm: sql`excluded.qr_size_mm`,
+          badge_color: sql`excluded.badge_color`,
+          badge_text: sql`excluded.badge_text`,
+          custom_notes: sql`excluded.custom_notes`,
+          updated_at: sql`now()`,
+        },
+      })
+      .returning();
     return this.mapRow(rows[0]);
   }
 

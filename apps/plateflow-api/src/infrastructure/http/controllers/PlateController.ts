@@ -22,7 +22,7 @@ export class PlateController {
     }
   }
 
-  async createBatch(req: FastifyRequest<{ Body: BatchGenerationParams }>, reply: FastifyReply) {
+  async createBatch(req: FastifyRequest<{ Body: any }>, reply: FastifyReply) {
     try {
       const result = await this.createBatchUseCase.execute(req.body);
       return reply.status(201).send(result);
