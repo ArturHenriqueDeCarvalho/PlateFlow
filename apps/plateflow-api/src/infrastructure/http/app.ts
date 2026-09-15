@@ -42,10 +42,12 @@ export function createFastifyApp() {
     }
   });
 
-  // Seed default templates in background
-  seedDefaultTemplates().catch((err) => {
-    console.warn('[Seed warning]:', err.message);
-  });
+  // Seed default templates in background if database URL is configured
+  if (process.env.DATABASE_URL) {
+    seedDefaultTemplates().catch((err) => {
+      console.warn('[Seed warning]:', err.message);
+    });
+  }
 
   // Register routes
   app.register(authRoutes, { prefix: '/api/auth' });

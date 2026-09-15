@@ -12,21 +12,58 @@ async function ensureReady() {
 }
 
 export default async function handler(req: any, res: any) {
-  const targetRoute = req.query?.__route || req.headers?.['x-forwarded-uri'];
-  if (targetRoute && typeof targetRoute === 'string') {
-    const [routePath, routeQuery] = targetRoute.split('?');
-    const existingParams = new URLSearchParams(routeQuery || '');
-    for (const [key, value] of Object.entries(req.query || {})) {
-      if (key !== '__route' && typeof value === 'string') {
-        existingParams.set(key, value);
+  try {
+    const targetRoute = req.query?.__route || req.headers?.['x-forwarded-uri'];
+    let targetUrl = req.url || '/';
+    if (targetRoute && typeof targetRoute === 'string') {
+      const [routePath, routeQuery] = targetRoute.split('?');
+      const existingParams = new URLSearchParams(routeQuery || '');
+      for (const [key, value] of Object.entries(req.query || {})) {
+        if (key !== '__route' && typeof value === 'string') {
+          existingParams.set(key, value);
+        }
+      }
+      const fullQuery = existingParams.toString();
+      targetUrl = fullQuery ? `${routePath}?${fullQuery}` : routePath;
+    }
+
+    await ensureReady();
+
+    const headers = { ...(req.headers || {}) };
+    delete headers['content-length'];
+
+    let payload: any = undefined;
+    if (req.method !== 'GET' && req.method !== 'HEAD' && req.body !== undefined && req.body !== null) {
+      if (typeof req.body === 'object' && !Buffer.isBuffer(req.body)) {
+        payload = JSON.stringify(req.body);
+        if (!headers['content-type']) {
+          headers['content-type'] = 'application/json';
+        }
+      } else {
+        payload = req.body;
       }
     }
-    const fullQuery = existingParams.toString();
-    req.url = fullQuery ? `${routePath}?${fullQuery}` : routePath;
-  }
 
-  await ensureReady();
-  app.server.emit('request', req, res);
+    const response = await app.inject({
+      method: req.method || 'GET',
+      url: targetUrl,
+      headers,
+      payload,
+    });
+
+    for (const [key, value] of Object.entries(response.headers)) {
+      if (value !== undefined) {
+        res.setHeader(key, value);
+      }
+    }
+    res.statusCode = response.statusCode;
+    res.end(response.rawPayload);
+  } catch (err: any) {
+    console.error('[Vercel Handler Error]:', err);
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ error: err.message || 'Erro interno no servidor' }));
+  }
 }
 
 if (process.argv[1]?.includes('apps/plateflow-api')) {

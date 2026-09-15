@@ -16,11 +16,7 @@ export function sanitizeErrorMessage(msg: string): string {
 }
 
 export function getDatabaseUrl(): string {
-  const rawUrl = process.env.DATABASE_URL;
-  if (!rawUrl) {
-    throw new Error('DATABASE_URL não configurada no ambiente.');
-  }
-
+  const rawUrl = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/postgres';
   const cleanUrl = rawUrl.replace(/([?&])sslmode=[^&]+(&|$)/, '$1').replace(/[?&]$/, '');
   const supabaseDirectRegex = /postgres(?:ql)?:\/\/([^:]+):([^@]+)@db\.([a-z0-9]+)\.supabase\.co(?::5432)?\/([^?]+)/;
   const match = cleanUrl.match(supabaseDirectRegex);

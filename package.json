@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "turbo run build",
+    "build": "turbo run build && rm -rf dist && mkdir -p dist && cp -r apps/plateflow-app/dist/* dist/",
     "build:api": "pnpm --filter @plateflow/api build",
     "build:app": "pnpm --filter @plateflow/app build",
     "start": "NODE_ENV=production tsx server.ts",
