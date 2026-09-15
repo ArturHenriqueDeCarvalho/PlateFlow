@@ -66,7 +66,7 @@ export default async function handler(req: any, res: any) {
   }
 }
 
-if (process.argv[1]?.includes('apps/plateflow-api')) {
+if (process.argv[1]?.includes('apps/plateflow-api') && !process.env.VERCEL) {
   const PORT = Number(process.env.PORT) || 3005;
   app.listen({ port: PORT, host: '0.0.0.0' }).then(() => {
     console.log(`⚡ PlateFlow Clean API listening on port ${PORT}`);
