@@ -1,5 +1,4 @@
-import { eq, desc } from 'drizzle-orm';
-import { db, analytics } from '@plateflow/database';
+import { db, analytics, eq, desc } from '@plateflow/database';
 import type { IAnalyticsRepository } from '../../core/repositories/IAnalyticsRepository.js';
 import type { AnalyticsLog } from '../../core/entities/index.js';
 

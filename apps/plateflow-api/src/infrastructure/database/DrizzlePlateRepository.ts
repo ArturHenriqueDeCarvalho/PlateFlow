@@ -1,5 +1,4 @@
-import { eq, desc } from 'drizzle-orm';
-import { db, plates } from '@plateflow/database';
+import { db, plates, eq, desc } from '@plateflow/database';
 import type { IPlateRepository } from '../../core/repositories/IPlateRepository.js';
 import type { PhysicalPlate } from '../../core/entities/index.js';
 

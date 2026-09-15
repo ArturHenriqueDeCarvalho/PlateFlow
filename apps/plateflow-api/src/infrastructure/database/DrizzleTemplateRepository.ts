@@ -1,5 +1,4 @@
-import { eq, desc } from 'drizzle-orm';
-import { db, templates } from '@plateflow/database';
+import { db, templates, eq, desc } from '@plateflow/database';
 import type { ITemplateRepository } from '../../core/repositories/ITemplateRepository.js';
 import type { PlateTemplate } from '../../core/entities/index.js';
 

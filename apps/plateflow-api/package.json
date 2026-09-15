@@ -15,7 +15,6 @@
     "@plateflow/database": "workspace:*",
     "@plateflow/types": "workspace:*",
     "dotenv": "^17.2.3",
-    "drizzle-orm": "^0.45.2",
     "fastify": "^5.2.1",
     "pg": "^8.23.0",
     "qrcode": "^1.5.4"

@@ -1,5 +1,4 @@
-import { eq, desc, sql } from 'drizzle-orm';
-import { db, redirects } from '@plateflow/database';
+import { db, redirects, eq, desc, sql } from '@plateflow/database';
 import type { IRedirectRepository } from '../../core/repositories/IRedirectRepository.js';
 import type { DynamicRedirect, RedirectType, RedirectStatus } from '../../core/entities/index.js';
 
