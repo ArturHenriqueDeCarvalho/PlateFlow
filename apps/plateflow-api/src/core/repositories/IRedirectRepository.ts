@@ -7,4 +7,5 @@ export interface IRedirectRepository {
   update(slug: string, redirect: Partial<DynamicRedirect>): Promise<DynamicRedirect | null>;
   incrementClicks(slug: string): Promise<void>;
   deleteBySlug(slug: string): Promise<boolean>;
+  deleteBatchBySlugs(slugs: string[]): Promise<boolean>;
 }

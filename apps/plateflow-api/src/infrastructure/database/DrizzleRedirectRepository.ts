@@ -1,4 +1,4 @@
-import { db, redirects, eq, desc, sql } from '@plateflow/database';
+import { db, redirects, eq, desc, sql, inArray } from '@plateflow/database';
 import type { IRedirectRepository } from '../../core/repositories/IRedirectRepository.js';
 import type { DynamicRedirect, RedirectType, RedirectStatus } from '../../core/entities/index.js';
 
@@ -120,6 +120,12 @@ export class DrizzleRedirectRepository implements IRedirectRepository {
 
   async deleteBySlug(slug: string): Promise<boolean> {
     const res = await db.delete(redirects).where(eq(redirects.slug, slug)).returning();
+    return res.length > 0;
+  }
+
+  async deleteBatchBySlugs(slugs: string[]): Promise<boolean> {
+    if (!slugs.length) return true;
+    const res = await db.delete(redirects).where(inArray(redirects.slug, slugs)).returning();
     return res.length > 0;
   }
 }

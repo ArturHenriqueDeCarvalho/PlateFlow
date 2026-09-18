@@ -48,4 +48,14 @@ export class PlateController {
       return reply.status(400).send({ error: err.message || 'Erro ao excluir placa.' });
     }
   }
+
+  async deleteBatch(req: FastifyRequest<{ Body: { ids: string[] } }>, reply: FastifyReply) {
+    try {
+      const ids = req.body?.ids || [];
+      const result = await this.deletePlateUseCase.executeBatch(ids);
+      return reply.send({ success: true, count: result.count, message: `${result.count} placa(s) excluída(s) com sucesso.` });
+    } catch (err: any) {
+      return reply.status(400).send({ error: err.message || 'Erro ao excluir placas em lote.' });
+    }
+  }
 }

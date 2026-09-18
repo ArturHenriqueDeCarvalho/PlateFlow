@@ -1,4 +1,4 @@
-import { db, plates, eq, desc, sql } from '@plateflow/database';
+import { db, plates, eq, desc, sql, inArray } from '@plateflow/database';
 import type { IPlateRepository } from '../../core/repositories/IPlateRepository.js';
 import type { PhysicalPlate } from '../../core/entities/index.js';
 
@@ -31,6 +31,21 @@ export class DrizzlePlateRepository implements IPlateRepository {
       nfcWritten: r.nfc_written,
       createdAt: r.created_at ? r.created_at.toISOString() : new Date().toISOString(),
     };
+  }
+
+  async findByIds(ids: string[]): Promise<PhysicalPlate[]> {
+    if (!ids.length) return [];
+    const rows = await db.select().from(plates).where(inArray(plates.id, ids));
+    return rows.map((r) => ({
+      id: r.id,
+      slug: r.slug,
+      templateId: r.template_id,
+      batchIdentifier: r.batch_identifier,
+      plateNumber: r.plate_number,
+      customerNotes: r.customer_notes || '',
+      nfcWritten: r.nfc_written,
+      createdAt: r.created_at ? r.created_at.toISOString() : new Date().toISOString(),
+    }));
   }
 
   async findBySlug(slug: string): Promise<PhysicalPlate | null> {
@@ -67,8 +82,9 @@ export class DrizzlePlateRepository implements IPlateRepository {
       .insert(plates)
       .values(values)
       .onConflictDoUpdate({
-        target: plates.id,
+        target: plates.slug,
         set: {
+          batch_identifier: sql`excluded.batch_identifier`,
           customer_notes: sql`excluded.customer_notes`,
           template_id: sql`excluded.template_id`,
           nfc_written: sql`excluded.nfc_written`,
@@ -113,6 +129,12 @@ export class DrizzlePlateRepository implements IPlateRepository {
 
   async delete(id: string): Promise<boolean> {
     const res = await db.delete(plates).where(eq(plates.id, id)).returning();
+    return res.length > 0;
+  }
+
+  async deleteBatch(ids: string[]): Promise<boolean> {
+    if (!ids.length) return true;
+    const res = await db.delete(plates).where(inArray(plates.id, ids)).returning();
     return res.length > 0;
   }
 }

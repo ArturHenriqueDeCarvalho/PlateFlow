@@ -151,6 +151,9 @@ export const ImageComposerService = {
 
       const fileName = `placa_${(i + 1).toString().padStart(2, '0')}_${plate.slug}.png`;
       folder?.file(fileName, base64Data, { base64: true });
+
+      // Yield execution to prevent UI freeze and facilitate garbage collection
+      await new Promise((resolve) => setTimeout(resolve, 0));
     }
 
     specTxt += `\nINSTRUÇÕES DE INSTALAÇÃO DA TAG NFC:\n`;
@@ -164,6 +167,66 @@ export const ImageComposerService = {
       type: 'blob',
       compression: 'DEFLATE',
       compressionOptions: { level: 6 }
+    });
+  },
+
+  /**
+   * Generates a complete ZIP containing selected plates with their corresponding templates
+   */
+  async generateZipForSelectedPlates(
+    plates: PhysicalPlate[],
+    templates: PlateTemplate[],
+    baseUrl: string,
+    onProgress?: (current: number, total: number, currentSlug: string) => void
+  ): Promise<Blob> {
+    const zip = new JSZip();
+    const folder = zip.folder(`placas_selecionadas_${plates.length}`);
+    const templateMap = new Map(templates.map((t) => [t.id, t]));
+    const fallbackTemplate = templates[0];
+
+    let specTxt = `==========================================================\n`;
+    specTxt += `GUIA DE IMPRESSÃO - PLACAS SELECIONADAS COM QR E NFC\n`;
+    specTxt += `==========================================================\n\n`;
+    specTxt += `Total de Unidades: ${plates.length}\n`;
+    specTxt += `Data de Exportação: ${new Date().toLocaleString('pt-BR')}\n\n`;
+    specTxt += `LISTA DE PLACAS E SLUGS DINÂMICOS:\n`;
+    specTxt += `----------------------------------------------------------\n`;
+
+    const total = plates.length;
+
+    for (let i = 0; i < total; i++) {
+      const plate = plates[i];
+      const template = templateMap.get(plate.templateId) || fallbackTemplate;
+      const shortUrl = `${baseUrl.replace(/\/$/, '')}/r/${plate.slug}`;
+
+      if (onProgress) {
+        onProgress(i + 1, total, plate.slug);
+      }
+
+      specTxt += `[#${(i + 1).toString().padStart(2, '0')}] ${plate.slug} -> URL Curta: ${shortUrl} | Template: ${template?.name || 'Padrão'} | Nota: ${plate.customerNotes || 'N/A'}\n`;
+
+      if (template) {
+        const dataUrl = await this.composePlate(template, shortUrl, plate.slug, { showSlugLabel: true });
+        const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
+        const fileName = `placa_${(i + 1).toString().padStart(2, '0')}_${plate.slug}.png`;
+        folder?.file(fileName, base64Data, { base64: true });
+      }
+
+      // Yield execution to browser event loop
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    specTxt += `\nINSTRUÇÕES DE INSTALAÇÃO DA TAG NFC:\n`;
+    specTxt += `1. Fixe a etiqueta NFC (NTAG213/215) no verso da placa correspondente ao símbolo de onda.\n`;
+    specTxt += `2. Grave a respectiva URL Curta de cada placa utilizando o aplicativo NFC Tools no smartphone.\n`;
+    specTxt += `3. O redirecionamento poderá ser alterado a qualquer momento no painel sem alterar o QR ou a tag física.\n`;
+
+    folder?.file('LEIAME_GRAFICA.txt', specTxt);
+
+    return await zip.generateAsync({
+      type: 'blob',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 },
     });
   }
 };

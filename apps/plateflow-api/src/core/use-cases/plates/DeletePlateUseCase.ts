@@ -21,4 +21,17 @@ export class DeletePlateUseCase {
 
     return true;
   }
+
+  async executeBatch(ids: string[]): Promise<{ count: number }> {
+    if (!ids || ids.length === 0) return { count: 0 };
+    const plates = await this.plateRepo.findByIds(ids);
+    const slugs = plates.map((p) => p.slug).filter(Boolean);
+
+    await this.plateRepo.deleteBatch(ids);
+    if (slugs.length > 0) {
+      await this.redirectRepo.deleteBatchBySlugs(slugs).catch(() => {});
+    }
+
+    return { count: plates.length };
+  }
 }

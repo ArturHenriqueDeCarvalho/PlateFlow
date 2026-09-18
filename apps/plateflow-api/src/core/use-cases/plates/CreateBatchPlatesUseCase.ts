@@ -43,10 +43,18 @@ export class CreateBatchPlatesUseCase {
         }
       }
 
-      const savedRedirects = await this.redirectRepo.createBatch(completeRedirects);
-      const savedPlates = await this.plateRepo.createBatch(incomingPlates);
-
-      return { plates: savedPlates, redirects: savedRedirects };
+      let savedRedirects: DynamicRedirect[] = [];
+      try {
+        savedRedirects = await this.redirectRepo.createBatch(completeRedirects);
+        const savedPlates = await this.plateRepo.createBatch(incomingPlates);
+        return { plates: savedPlates, redirects: savedRedirects };
+      } catch (err) {
+        if (savedRedirects.length > 0) {
+          const slugsToClean = completeRedirects.map((r) => r.slug);
+          await this.redirectRepo.deleteBatchBySlugs(slugsToClean).catch(() => {});
+        }
+        throw err;
+      }
     }
 
     // 2. Client passed raw batch generation parameters
@@ -95,9 +103,17 @@ export class CreateBatchPlatesUseCase {
     }
 
     // Persist redirects first (as plates reference slugs/redirects)
-    const savedRedirects = await this.redirectRepo.createBatch(newRedirects);
-    const savedPlates = await this.plateRepo.createBatch(newPlates);
-
-    return { plates: savedPlates, redirects: savedRedirects };
+    let savedRedirects: DynamicRedirect[] = [];
+    try {
+      savedRedirects = await this.redirectRepo.createBatch(newRedirects);
+      const savedPlates = await this.plateRepo.createBatch(newPlates);
+      return { plates: savedPlates, redirects: savedRedirects };
+    } catch (err) {
+      if (savedRedirects.length > 0) {
+        const slugsToClean = newRedirects.map((r) => r.slug);
+        await this.redirectRepo.deleteBatchBySlugs(slugsToClean).catch(() => {});
+      }
+      throw err;
+    }
   }
 }

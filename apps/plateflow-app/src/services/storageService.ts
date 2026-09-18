@@ -291,6 +291,34 @@ export const StorageService = {
     return updated;
   },
 
+  async bulkDeletePlates(ids: string[]): Promise<PhysicalPlate[]> {
+    if (!ids.length) return this.getPlates();
+    const idSet = new Set(ids);
+    const current = this.getPlates();
+    const platesToDelete = current.filter(p => idSet.has(p.id));
+    const slugsToDelete = new Set(platesToDelete.map(p => p.slug.toLowerCase()));
+
+    const updatedPlates = current.filter(p => !idSet.has(p.id));
+    safeSetItem(STORAGE_KEYS.PLATES, updatedPlates);
+
+    if (slugsToDelete.size > 0) {
+      const updatedRedirects = this.getRedirects().filter(r => !slugsToDelete.has(r.slug.toLowerCase()));
+      safeSetItem(STORAGE_KEYS.REDIRECTS, updatedRedirects);
+    }
+
+    try {
+      await fetch('/api/plates/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify({ ids }),
+      });
+    } catch (err) {
+      console.error('Error bulk deleting plates on server:', err);
+    }
+
+    return updatedPlates;
+  },
+
   // ==========================================
   // BATCH GENERATOR (ATOMIC SUPABASE TRANSACTION)
   // ==========================================
@@ -430,9 +458,15 @@ export const StorageService = {
     const plates = this.getPlates();
     const analytics = this.getAnalytics();
 
+    const redirectMap = new Map(redirects.map((r) => [r.slug.toLowerCase(), r]));
+    const availablePlates = plates.filter((p) => {
+      const r = redirectMap.get(p.slug.toLowerCase());
+      return !r || r.status === 'virgin' || !r.destinationUrl;
+    }).length;
+
     const totalRedirects = redirects.length;
-    const activeRedirects = redirects.filter(r => r.status === 'active').length;
-    const virginRedirects = redirects.filter(r => r.status === 'virgin').length;
+    const activeRedirects = redirects.filter(r => r.status === 'active' && r.destinationUrl).length;
+    const virginRedirects = availablePlates;
     const pausedRedirects = redirects.filter(r => r.status === 'paused').length;
     const totalClicks = redirects.reduce((acc, r) => acc + (r.clicks || 0), 0);
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Download,
   CheckCircle2,
@@ -31,10 +31,17 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
   const [slugPrefix, setSlugPrefix] = useState('placa');
   const [customerPrefix, setCustomerPrefix] = useState('Placa');
   const [quantity, setQuantity] = useState(10);
+  const [startNumber, setStartNumber] = useState(1);
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, currentSlug: '' });
   const [downloadReady, setDownloadReady] = useState<{ url: string; filename: string; count: number } | null>(null);
+
+  useEffect(() => {
+    if (!selectedTemplateId && templates.length > 0) {
+      setSelectedTemplateId(templates[0].id);
+    }
+  }, [templates, selectedTemplateId]);
 
   const handleStartGeneration = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,8 +55,9 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
     const newPlates: PhysicalPlate[] = [];
     const newRedirects: DynamicRedirect[] = [];
 
-    for (let i = 1; i <= quantity; i++) {
-      const padded = i.toString().padStart(2, '0');
+    for (let i = 0; i < quantity; i++) {
+      const plateNum = startNumber + i;
+      const padded = plateNum.toString().padStart(2, '0');
       const cleanPrefix = slugPrefix.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '-');
       const slug = `${cleanPrefix}-${padded}`;
 
@@ -69,7 +77,7 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
         slug,
         templateId: template.id,
         batchIdentifier: batchId,
-        plateNumber: i,
+        plateNumber: plateNum,
         customerNotes: `${customerPrefix} #${padded}`,
         nfcWritten: false,
         createdAt: now
@@ -201,39 +209,80 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
             />
           </div>
 
-          {/* Quantity Selector */}
+          {/* Dynamic Quantity Selector */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-zinc-300">
-              Quantidade de Placas
-            </label>
-            <div className="grid grid-cols-4 gap-2">
-              {[5, 10, 25, 50].map((num) => (
-                <button
-                  key={num}
-                  type="button"
-                  onClick={() => setQuantity(num)}
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-zinc-300">
+                Quantidade de Placas
+              </label>
+              <span className="text-[11px] font-mono text-zinc-400">
+                {quantity} {quantity === 1 ? 'unidade' : 'unidades'}
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="w-full sm:w-28 shrink-0">
+                <Input
+                  id="input-batch-quantity"
+                  type="number"
+                  min={1}
+                  max={500}
+                  value={quantity}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    setQuantity(isNaN(val) ? 1 : Math.max(1, Math.min(500, val)));
+                  }}
                   disabled={isProcessing}
-                  className={`py-2 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
-                    quantity === num
-                      ? 'bg-zinc-100 text-zinc-900 border-zinc-100 font-semibold'
-                      : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700'
-                  }`}
-                >
-                  {num}
-                </button>
-              ))}
+                  required
+                />
+              </div>
+
+              {/* Quick Presets */}
+              <div className="flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-none py-0.5">
+                {[5, 10, 25, 50, 100].map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => setQuantity(num)}
+                    disabled={isProcessing}
+                    className={`flex-1 py-2 px-2.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer text-center whitespace-nowrap ${
+                      quantity === num
+                        ? 'bg-zinc-100 text-zinc-900 border-zinc-100 font-semibold'
+                        : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                    }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          <Input
-            id="input-customer-prefix"
-            label="Identificação Inicial"
-            type="text"
-            value={customerPrefix}
-            onChange={(e) => setCustomerPrefix(e.target.value)}
-            disabled={isProcessing}
-            placeholder="Ex: Mesa"
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              id="input-customer-prefix"
+              label="Identificação Inicial"
+              type="text"
+              value={customerPrefix}
+              onChange={(e) => setCustomerPrefix(e.target.value)}
+              disabled={isProcessing}
+              placeholder="Ex: Mesa"
+            />
+
+            <Input
+              id="input-start-number"
+              label="Número Inicial"
+              type="number"
+              min={1}
+              value={startNumber}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10);
+                setStartNumber(isNaN(val) ? 1 : Math.max(1, val));
+              }}
+              disabled={isProcessing}
+              placeholder="Ex: 1"
+            />
+          </div>
 
           {/* Progress indicator */}
           {isProcessing && (

@@ -203,6 +203,28 @@ export default function App() {
     showToast('Dados sincronizados.');
   };
 
+  const handleDeletePlate = async (plateId: string) => {
+    try {
+      await StorageService.deletePlate(plateId);
+      await loadDataFromBackend();
+      showToast('Placa excluída com sucesso.');
+    } catch (err: any) {
+      console.error('Erro ao excluir placa:', err);
+      showToast('Erro ao excluir placa.');
+    }
+  };
+
+  const handleBulkDeletePlates = async (plateIds: string[]) => {
+    try {
+      await StorageService.bulkDeletePlates(plateIds);
+      await loadDataFromBackend();
+      showToast(`${plateIds.length} placa(s) excluída(s) com sucesso.`);
+    } catch (err: any) {
+      console.error('Erro ao excluir placas em lote:', err);
+      showToast('Erro ao excluir placas.');
+    }
+  };
+
   // =========================================================================
   // 1. PUBLIC ROUTE: Customer scanned a physical plate (/r/:slug)
   // =========================================================================
@@ -416,6 +438,8 @@ export default function App() {
             onOpenNfcAssistant={(plate) => setNfcAssistantPlate(plate)}
             onOpenPlatePreview={(plate) => setPreviewPlate(plate)}
             onTestRedirect={(slug) => setSimulatorSlug(slug)}
+            onDeletePlate={handleDeletePlate}
+            onBulkDeletePlates={handleBulkDeletePlates}
           />
         )}
 
