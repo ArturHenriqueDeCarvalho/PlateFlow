@@ -111,14 +111,18 @@ export const StorageService = {
   },
 
   async saveTemplate(template: PlateTemplate): Promise<PlateTemplate[]> {
-    try {
-      await fetch('/api/templates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-        body: JSON.stringify(template),
-      });
-    } catch (err) {
-      console.error('Error saving template to server:', err);
+    const res = await fetch('/api/templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify(template),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      const msg = res.status === 413
+        ? 'A imagem do modelo é muito grande para o servidor. Tente usar uma imagem mais leve.'
+        : (errData.error || errData.message || `Erro ao salvar modelo (${res.status})`);
+      throw new Error(msg);
     }
 
     const current = this.getTemplates();
@@ -131,13 +135,14 @@ export const StorageService = {
   },
 
   async deleteTemplate(id: string): Promise<PlateTemplate[]> {
-    try {
-      await fetch(`/api/templates/${id}`, {
-        method: 'DELETE',
-        headers: { ...getAuthHeader() },
-      });
-    } catch (err) {
-      console.error('Error deleting template from server:', err);
+    const res = await fetch(`/api/templates/${id}`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeader() },
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || errData.message || `Erro ao excluir modelo (${res.status})`);
     }
 
     const current = this.getTemplates();

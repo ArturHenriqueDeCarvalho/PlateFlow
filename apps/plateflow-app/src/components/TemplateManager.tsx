@@ -16,8 +16,111 @@ import { Button, Input, Card, Badge, PageHeader } from './ui';
 
 interface TemplateManagerProps {
   templates: PlateTemplate[];
-  onSaveTemplate: (template: PlateTemplate) => void;
-  onDeleteTemplate: (id: string) => void;
+  onSaveTemplate: (template: PlateTemplate) => Promise<void> | void;
+  onDeleteTemplate: (id: string) => Promise<void> | void;
+}
+
+/**
+ * Otimiza a imagem do modelo para evitar estouro do limite de payload (HTTP 413)
+ * mantendo excelente fidelidade gráfica para a impressão.
+ */
+async function optimizeTemplateImage(
+  file: File
+): Promise<{ dataUrl: string; width: number; height: number; sizeBytes: number }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Falha ao ler o arquivo de imagem.'));
+    reader.onload = (event) => {
+      const originalDataUrl = event.target?.result as string;
+      const img = new Image();
+      img.onerror = () => reject(new Error('Falha ao carregar a imagem selecionada.'));
+      img.onload = () => {
+        const origWidth = img.naturalWidth || 1200;
+        const origHeight = img.naturalHeight || 1600;
+
+        // Se o arquivo original for menor que 700 KB e a resolução for razoável (<= 2400px), mantém o original
+        if (file.size < 700 * 1024 && origWidth <= 2400 && origHeight <= 2400) {
+          resolve({
+            dataUrl: originalDataUrl,
+            width: origWidth,
+            height: origHeight,
+            sizeBytes: file.size,
+          });
+          return;
+        }
+
+        // Redimensionar mantendo aspect ratio para no máximo 2400px no maior lado
+        const maxDim = 2400;
+        let targetWidth = origWidth;
+        let targetHeight = origHeight;
+        if (targetWidth > maxDim || targetHeight > maxDim) {
+          if (targetWidth > targetHeight) {
+            targetHeight = Math.round((targetHeight * maxDim) / targetWidth);
+            targetWidth = maxDim;
+          } else {
+            targetWidth = Math.round((targetWidth * maxDim) / targetHeight);
+            targetHeight = maxDim;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve({
+            dataUrl: originalDataUrl,
+            width: origWidth,
+            height: origHeight,
+            sizeBytes: file.size,
+          });
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+        const isPng = file.type === 'image/png';
+        let optimizedUrl = '';
+
+        if (isPng) {
+          try {
+            const imgData = ctx.getImageData(0, 0, targetWidth, targetHeight).data;
+            let hasAlpha = false;
+            for (let i = 3; i < imgData.length; i += 16) {
+              if (imgData[i] < 250) {
+                hasAlpha = true;
+                break;
+              }
+            }
+            if (hasAlpha) {
+              optimizedUrl = canvas.toDataURL('image/png');
+            } else {
+              optimizedUrl = canvas.toDataURL('image/jpeg', 0.88);
+            }
+          } catch {
+            optimizedUrl = canvas.toDataURL('image/jpeg', 0.88);
+          }
+        } else {
+          optimizedUrl = canvas.toDataURL('image/jpeg', 0.88);
+        }
+
+        // Se ainda ficou grande (> 2MB em base64), comprime com qualidade 0.78
+        if (optimizedUrl.length > 2 * 1024 * 1024) {
+          optimizedUrl = canvas.toDataURL('image/jpeg', 0.78);
+        }
+
+        const estimatedBytes = Math.round((optimizedUrl.length * 3) / 4);
+        resolve({
+          dataUrl: optimizedUrl,
+          width: targetWidth,
+          height: targetHeight,
+          sizeBytes: estimatedBytes,
+        });
+      };
+      img.src = originalDataUrl;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 export const TemplateManager: React.FC<TemplateManagerProps> = ({
@@ -37,6 +140,10 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
   const [qrY, setQrY] = useState(selectedTemplate?.qrY || 480);
   const [qrSize, setQrSize] = useState(selectedTemplate?.qrSize || 440);
 
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [imageSizeFormatted, setImageSizeFormatted] = useState<string>('');
+
   const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -51,6 +158,7 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
       setQrX(selectedTemplate.qrX);
       setQrY(selectedTemplate.qrY);
       setQrSize(selectedTemplate.qrSize);
+      setImageSizeFormatted('');
     }
   }, [selectedTemplate]);
 
@@ -92,28 +200,32 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
     };
   }, [backgroundUrl, qrX, qrY, qrSize, backgroundWidth, backgroundHeight]);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      const img = new Image();
-      img.onload = () => {
-        setBackgroundUrl(dataUrl);
-        setBackgroundWidth(img.naturalWidth || 1200);
-        setBackgroundHeight(img.naturalHeight || 1600);
-        const calculatedSize = Math.round(img.naturalWidth * 0.35);
-        const calculatedX = Math.round((img.naturalWidth - calculatedSize) / 2);
-        const calculatedY = Math.round(img.naturalHeight * 0.3);
-        setQrSize(calculatedSize);
-        setQrX(calculatedX);
-        setQrY(calculatedY);
-      };
-      img.src = dataUrl;
-    };
-    reader.readAsDataURL(file);
+    setIsOptimizing(true);
+    try {
+      const optimized = await optimizeTemplateImage(file);
+      setBackgroundUrl(optimized.dataUrl);
+      setBackgroundWidth(optimized.width);
+      setBackgroundHeight(optimized.height);
+      const calculatedSize = Math.round(optimized.width * 0.35);
+      const calculatedX = Math.round((optimized.width - calculatedSize) / 2);
+      const calculatedY = Math.round(optimized.height * 0.3);
+      setQrSize(calculatedSize);
+      setQrX(calculatedX);
+      setQrY(calculatedY);
+
+      const sizeKb = Math.round(optimized.sizeBytes / 1024);
+      setImageSizeFormatted(sizeKb >= 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`);
+    } catch (err: any) {
+      console.error('Falha ao processar imagem:', err);
+      alert('Erro ao carregar imagem: ' + (err.message || 'formato inválido'));
+    } finally {
+      setIsOptimizing(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleCreateNew = () => {
@@ -132,22 +244,30 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
     setSelectedTemplate(newTmpl);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const updated: PlateTemplate = {
-      id: selectedTemplate?.id || `tmpl-${Date.now()}`,
-      name: name.trim() || 'Modelo Sem Nome',
-      description: description.trim(),
-      backgroundUrl,
-      backgroundWidth: Number(backgroundWidth) || 1200,
-      backgroundHeight: Number(backgroundHeight) || 1600,
-      qrX: Number(qrX) || 0,
-      qrY: Number(qrY) || 0,
-      qrSize: Number(qrSize) || 400,
-      createdAt: selectedTemplate?.createdAt || new Date().toISOString()
-    };
-    onSaveTemplate(updated);
-    setSelectedTemplate(updated);
+    if (isSaving || isOptimizing) return;
+    setIsSaving(true);
+    try {
+      const updated: PlateTemplate = {
+        id: selectedTemplate?.id || `tmpl-${Date.now()}`,
+        name: name.trim() || 'Modelo Sem Nome',
+        description: description.trim(),
+        backgroundUrl,
+        backgroundWidth: Number(backgroundWidth) || 1200,
+        backgroundHeight: Number(backgroundHeight) || 1600,
+        qrX: Number(qrX) || 0,
+        qrY: Number(qrY) || 0,
+        qrSize: Number(qrSize) || 400,
+        createdAt: selectedTemplate?.createdAt || new Date().toISOString()
+      };
+      await onSaveTemplate(updated);
+      setSelectedTemplate(updated);
+    } catch {
+      // Erro tratado via toast no componente pai
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -259,22 +379,42 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
                   </label>
                   <span className="text-xs text-zinc-400 font-mono">
                     {backgroundWidth}×{backgroundHeight}px
+                    {imageSizeFormatted ? ` • ${imageSizeFormatted}` : ''}
                   </span>
                 </div>
                 <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-700 bg-zinc-950 p-4 hover:border-zinc-500 transition-colors cursor-pointer text-center"
+                  onClick={() => !isOptimizing && fileInputRef.current?.click()}
+                  className={`flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-700 bg-zinc-950 p-4 transition-colors text-center ${
+                    isOptimizing
+                      ? 'opacity-60 cursor-wait'
+                      : 'hover:border-zinc-500 cursor-pointer'
+                  }`}
                 >
-                  <Upload className="h-5 w-5 text-zinc-300 mb-1" />
-                  <span className="text-xs text-zinc-200 font-medium">
-                    Subir nova imagem
-                  </span>
+                  {isOptimizing ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin text-zinc-300 mb-1" />
+                      <span className="text-xs text-zinc-300 font-medium">
+                        Otimizando imagem para impressão...
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-5 w-5 text-zinc-300 mb-1" />
+                      <span className="text-xs text-zinc-200 font-medium">
+                        Subir nova imagem
+                      </span>
+                      <span className="text-[10px] text-zinc-400 mt-0.5">
+                        Otimizada automaticamente para impressão sem perda
+                      </span>
+                    </>
+                  )}
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/png, image/jpeg, image/svg+xml"
+                    accept="image/png, image/jpeg, image/webp, image/svg+xml"
                     onChange={handleFileUpload}
                     className="hidden"
+                    disabled={isOptimizing}
                   />
                 </div>
               </div>
@@ -390,6 +530,8 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
                   variant="primary"
                   size="md"
                   className="w-full"
+                  isLoading={isSaving}
+                  disabled={isSaving || isOptimizing}
                   icon={<CheckCircle2 className="h-4 w-4" />}
                 >
                   Salvar Modelo

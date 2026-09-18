@@ -139,16 +139,25 @@ export default function App() {
   }, [clientRedirectSlug, countdown]);
 
   const handleSaveTemplate = async (template: PlateTemplate) => {
-    const updated = await StorageService.saveTemplate(template);
-    setTemplates(updated);
-    showToast(`Modelo salvo.`);
+    try {
+      const updated = await StorageService.saveTemplate(template);
+      setTemplates(updated);
+      showToast('Modelo salvo com sucesso.');
+    } catch (err: any) {
+      showToast(`Erro ao salvar modelo: ${err.message || 'Falha no servidor'}`);
+      throw err;
+    }
   };
 
   const handleDeleteTemplate = async (id: string) => {
     if (confirm('Excluir este modelo?')) {
-      const updated = await StorageService.deleteTemplate(id);
-      setTemplates(updated);
-      showToast('Modelo removido.');
+      try {
+        const updated = await StorageService.deleteTemplate(id);
+        setTemplates(updated);
+        showToast('Modelo removido com sucesso.');
+      } catch (err: any) {
+        showToast(`Erro ao remover modelo: ${err.message || 'Falha no servidor'}`);
+      }
     }
   };
 

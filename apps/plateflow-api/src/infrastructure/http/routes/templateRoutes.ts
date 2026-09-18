@@ -15,6 +15,6 @@ export const templateRoutes: FastifyPluginAsync = async (app) => {
   );
 
   app.get('/', (req, reply) => controller.getAll(req, reply));
-  app.post('/', { preHandler: [requireAuth] }, (req: any, reply) => controller.create(req, reply));
+  app.post('/', { preHandler: [requireAuth], bodyLimit: 10 * 1024 * 1024 }, (req: any, reply) => controller.create(req, reply));
   app.delete('/:id', { preHandler: [requireAuth] }, (req: any, reply) => controller.delete(req, reply));
 };

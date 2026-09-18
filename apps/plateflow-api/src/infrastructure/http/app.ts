@@ -13,6 +13,18 @@ export function createFastifyApp() {
   const app = Fastify({
     logger: process.env.NODE_ENV !== 'test',
     trustProxy: true,
+    bodyLimit: 10 * 1024 * 1024, // 10MB
+  });
+
+  // Handle payload too large error cleanly
+  app.setErrorHandler((error: any, _request, reply) => {
+    if (error.code === 'FST_ERR_CTP_BODY_TOO_LARGE') {
+      return reply.status(413).send({
+        error: 'Payload Too Large',
+        message: 'O tamanho da imagem ou dados enviados excede o limite suportado pelo servidor.',
+      });
+    }
+    reply.send(error);
   });
 
   // Plugins
@@ -22,7 +34,7 @@ export function createFastifyApp() {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   });
 
-  app.register(formbody);
+  app.register(formbody, { bodyLimit: 10 * 1024 * 1024 });
 
   // Health check endpoint
   app.get('/api/health', async (_req, reply) => {
