@@ -9,7 +9,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Authentication
 
-- [ ] **AUTH-01**: Admin and user can log in, log out, and call `/me` with a signed JWT; `mock_token_admin_*` no longer authenticates
+- [x] **AUTH-01**: Admin and user can log in, log out, and call `/me` with a signed JWT; `mock_token_admin_*` no longer authenticates
 - [ ] **AUTH-02**: Admin can create a user (email + initial password) and deactivate that user; there is no public signup
 - [ ] **AUTH-03**: A logged-in user can change their own password
 
@@ -71,7 +71,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Print shop (admin)
 
-- [ ] **SHOP-01**: Admin can manage plate templates and generate print lots with QR stamped on artwork
+- [x] **SHOP-01**: Admin can manage plate templates and generate print lots with QR stamped on artwork
 
 ## v2 Requirements
 
@@ -119,7 +119,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Complete |
 | AUTH-02 | Phase 3 | Pending |
 | AUTH-03 | Phase 1 | Pending |
 | OWN-01 | Phase 3 | Pending |
@@ -154,9 +154,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PRIV-01 | Phase 5 | Pending |
 | PRIV-02 | Phase 5 | Pending |
 | PRIV-03 | Phase 5 | Pending |
-| SHOP-01 | Phase 1 | Pending |
+| SHOP-01 | Phase 1 | Complete |
 
 **Coverage:**
+
 - v1 requirements: 36 total
 - Mapped to phases: 36
 - Unmapped: 0

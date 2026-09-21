@@ -34,13 +34,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Opening inventory or analytics without a session is refused; readings in the UI never show IP.
   4. After the auth swap, admin can still manage plate templates and generate print lots with QR stamped on artwork.
 
-**Plans:** 1/6 plans executed
+**Plans:** 2/6 plans executed
 
 Plans:
 **Wave 1**
 
 - [x] 01-01-PLAN.md — Wave 0 Fastify inject suite for AUTH-01/03, ANLY-04, SHOP-01
-- [ ] 01-02-PLAN.md — Walking-skeleton cookie login, /me, GET /api/plates lock, CORS allowlist
+- [x] 01-02-PLAN.md — Walking-skeleton cookie login, /me, GET /api/plates lock, CORS allowlist
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -132,7 +132,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Identity spine | 1/6 | In Progress|  |
+| 1. Identity spine | 2/6 | In Progress|  |
 | 2. Public scan hardening | 0/TBD | Not started | - |
 | 3. Users and ownership | 0/TBD | Not started | - |
 | 4. Operator slice | 0/TBD | Not started | - |
