@@ -109,7 +109,7 @@ Each task was committed atomically:
 2. **Task 2: Strip ip from analytics JSON DTOs** - `2227f3f` (test) + `5115726` (feat)
 3. **Task 3: Stop treating GET 401 as localStorage inventory** - `1824f67` (feat)
 
-**Plan metadata:** _(pending docs commit)_
+**Plan metadata:** `41eccfd` (docs: complete plan)
 
 _Note: Wave 0 already named ANLY-04 inventory/analytics injects; Task 2 added a seeded-ip RED so the no-ip assert cannot pass on an empty array._
 
