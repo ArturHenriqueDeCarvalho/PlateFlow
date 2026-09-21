@@ -13,7 +13,7 @@ PlateFlow already prints lots, writes NFC, and resolves `/r/:slug`. This milesto
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Identity spine** - Signed JWT, locked inventory GETs, IP off the wire, print console still works
+- [x] **Phase 1: Identity spine** - Signed JWT, locked inventory GETs, IP off the wire, print console still works (completed 2026-09-21)
 - [ ] **Phase 2: Public scan hardening** - `/r/:slug` is the only resolver; HTML and schemes are safe
 - [ ] **Phase 3: Users and ownership** - Admin-provisioned users; SQL slice on every list/edit
 - [ ] **Phase 4: Operator slice** - Destinations, NFC, PNG/SVG, and slice ZIP for the right owner
@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Opening inventory or analytics without a session is refused; readings in the UI never show IP.
   4. After the auth swap, admin can still manage plate templates and generate print lots with QR stamped on artwork.
 
-**Plans:** 6/6 plans executed
+**Plans:** 6/6 plans complete
 
 Plans:
 **Wave 1**
@@ -132,7 +132,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Identity spine | 6/6 | In Progress|  |
+| 1. Identity spine | 6/6 | Complete    | 2026-09-21 |
 | 2. Public scan hardening | 0/TBD | Not started | - |
 | 3. Users and ownership | 0/TBD | Not started | - |
 | 4. Operator slice | 0/TBD | Not started | - |
