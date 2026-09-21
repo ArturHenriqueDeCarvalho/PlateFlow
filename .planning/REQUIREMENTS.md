@@ -11,7 +11,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **AUTH-01**: Admin and user can log in, log out, and call `/me` with a signed JWT; `mock_token_admin_*` no longer authenticates
 - [ ] **AUTH-02**: Admin can create a user (email + initial password) and deactivate that user; there is no public signup
-- [ ] **AUTH-03**: A logged-in user can change their own password
+- [x] **AUTH-03**: A logged-in user can change their own password
 
 ### Ownership
 
@@ -121,7 +121,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | AUTH-01 | Phase 1 | Complete |
 | AUTH-02 | Phase 3 | Pending |
-| AUTH-03 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Complete |
 | OWN-01 | Phase 3 | Pending |
 | OWN-02 | Phase 3 | Pending |
 | OWN-03 | Phase 3 | Pending |

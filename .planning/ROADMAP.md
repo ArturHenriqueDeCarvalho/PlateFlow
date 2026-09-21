@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Opening inventory or analytics without a session is refused; readings in the UI never show IP.
   4. After the auth swap, admin can still manage plate templates and generate print lots with QR stamped on artwork.
 
-**Plans:** 4/6 plans executed
+**Plans:** 5/6 plans executed
 
 Plans:
 **Wave 1**
@@ -52,7 +52,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 01-05-PLAN.md — Header account menu own-password change with refresh revoke
+- [x] 01-05-PLAN.md — Header account menu own-password change with refresh revoke
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -132,7 +132,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Identity spine | 4/6 | In Progress|  |
+| 1. Identity spine | 5/6 | In Progress|  |
 | 2. Public scan hardening | 0/TBD | Not started | - |
 | 3. Users and ownership | 0/TBD | Not started | - |
 | 4. Operator slice | 0/TBD | Not started | - |

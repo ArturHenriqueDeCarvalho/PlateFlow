@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 1
 current_phase_name: Identity spine
 status: executing
-stopped_at: Completed 01-04-PLAN.md
-last_updated: "2026-09-21T19:02:43.227Z"
+stopped_at: Completed 01-05-PLAN.md
+last_updated: "2026-09-21T19:11:41.402Z"
 last_activity: 2026-09-21
 last_activity_desc: Phase 1 execution started
-state_head: 1824f67a5b93b95676b9588bc4d5ca34cd9336a9
+state_head: 9bcb63b54fe03cef6eafbc8db731e142402107b7
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 6
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-09-21)
 ## Current Position
 
 Phase: 1 (Identity spine) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Status: Ready to execute
 Last activity: 2026-09-21 — Phase 1 execution started
 
@@ -62,6 +62,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P02 | 2min | 3 tasks | 30 files |
 | Phase 01 P03 | 6 min | 3 tasks | 11 files |
 | Phase 01 P04 | 6 min | 3 tasks | 6 files |
+| Phase 01-identity-spine P05 | 6min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,9 @@ Recent decisions affecting current work:
 - [Phase 1]: D-07 pendingLogout / ZIP-in-flight deferred to plan 06 — failed refresh clears AUTH_USER immediately
 - [Phase 1]: Strengthen ANLY-04 analytics inject to seed a row with ip so no-ip assert is non-vacuous
 - [Phase 1]: Keep AnalyticsLog.ip optional on the shared type for the write path; never serialize on GET
+- [Phase 1]: Change-password success keeps operator signed in via new cookie pair (D-06)
+- [Phase 1]: AUTH-03 inject restores seed admin password after assertions
+- [Phase 1]: No settings route; Alterar senha only in Header account menu (D-05)
 
 ### Pending Todos
 
@@ -103,6 +107,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-21T19:02:43.193Z
-Stopped at: Completed 01-04-PLAN.md
+Last session: 2026-09-21T19:11:41.362Z
+Stopped at: Completed 01-05-PLAN.md
 Resume file: None
