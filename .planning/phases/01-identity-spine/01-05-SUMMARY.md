@@ -110,7 +110,7 @@ Each task was committed atomically:
 3. **Task 2: Header account menu + password modal** - `2de3364` (feat)
 4. **Task 3: Await logout POST** - `9bcb63b` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `c0e90c7` (docs: complete plan)
 
 _Note: TDD Task 1 produced RED then GREEN commits; no REFACTOR needed._
 
