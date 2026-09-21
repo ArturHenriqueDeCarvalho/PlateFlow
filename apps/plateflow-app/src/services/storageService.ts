@@ -28,8 +28,88 @@ function forgetLegacyTokens(): void {
   }
 }
 
-function apiFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
-  return fetch(input, { ...init, credentials: 'include' });
+function clearAuthUserCache(): void {
+  forgetLegacyTokens();
+  try {
+    localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function requestPath(input: RequestInfo | URL): string {
+  if (typeof input === 'string') {
+    try {
+      return new URL(input, window.location.origin).pathname;
+    } catch {
+      return input.split('?', 1)[0];
+    }
+  }
+  if (input instanceof URL) return input.pathname;
+  try {
+    return new URL(input.url, window.location.origin).pathname;
+  } catch {
+    return String(input.url).split('?', 1)[0];
+  }
+}
+
+function isAuthBootUrl(path: string): boolean {
+  return (
+    path === '/api/auth/login' ||
+    path === '/api/auth/refresh' ||
+    path === '/api/auth/logout'
+  );
+}
+
+let refreshInFlight: Promise<boolean> | null = null;
+
+async function postRefreshOnce(): Promise<boolean> {
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async () => {
+    try {
+      const res = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
+}
+
+/**
+ * Cookie-session fetch: credentials include, never Authorization.
+ * On 401 (except login/refresh/logout): POST /api/auth/refresh once, then retry.
+ */
+async function apiFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(init.headers || {});
+  headers.delete('Authorization');
+  headers.delete('authorization');
+
+  const requestInit: RequestInit = {
+    ...init,
+    headers,
+    credentials: 'include',
+  };
+
+  const first = await fetch(input, requestInit);
+  if (first.status !== 401) return first;
+
+  const path = requestPath(input);
+  if (isAuthBootUrl(path)) return first;
+
+  const refreshed = await postRefreshOnce();
+  if (!refreshed) {
+    clearAuthUserCache();
+    void fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+    return first;
+  }
+
+  return fetch(input, requestInit);
 }
 
 function safeGetItem<T>(key: string, fallback: T): T {
@@ -75,8 +155,8 @@ export const StorageService = {
   },
 
   logout(): void {
-    forgetLegacyTokens();
-    localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
+    void fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+    clearAuthUserCache();
   },
 
   getAuthUser(): AuthUser | null {
@@ -478,7 +558,9 @@ export const StorageService = {
     const plates = this.getPlates();
     const analytics = this.getAnalytics();
 
-    const redirectMap = new Map(redirects.map((r) => [r.slug.toLowerCase(), r]));
+    const redirectMap = new Map<string, DynamicRedirect>(
+      redirects.map((r) => [r.slug.toLowerCase(), r]),
+    );
     const availablePlates = plates.filter((p) => {
       const r = redirectMap.get(p.slug.toLowerCase());
       return !r || r.status === 'virgin' || !r.destinationUrl;
