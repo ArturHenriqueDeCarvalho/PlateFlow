@@ -1,0 +1,11 @@
+{
+  "phase": "01",
+  "plan": "04",
+  "task": "1",
+  "command": "pnpm --filter @plateflow/api exec node --import tsx --test --test-name-pattern \"ANLY-04 inventory GETs\" src/auth/auth.inject.test.ts",
+  "exit_code": 1,
+  "target_test": "ANLY-04 inventory GETs 401",
+  "expected": "GET /api/templates and GET /api/redirects return 401 without cookies",
+  "actual": "AssertionError: 200 !== 401 at templates statusCode",
+  "failure_kind": "assertion"
+}

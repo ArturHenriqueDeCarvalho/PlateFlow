@@ -1,0 +1,29 @@
+✖ AUTH-03 change password then login (2839.4326ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 15134.507
+
+✖ failing tests:
+
+test at src\auth\auth.inject.test.ts:1:5099
+✖ AUTH-03 change password then login (2839.4326ms)
+  AssertionError [ERR_ASSERTION]: wrong current must be 400/401, got 404
+      at TestContext.<anonymous> (C:\Users\luizd\Projects\PlateFlow\apps\plateflow-api\src\auth\auth.inject.test.ts:206:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+undefined
+C:\Users\luizd\Projects\PlateFlow\apps\plateflow-api:
+[ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL] Command failed with exit code 1: node --import tsx --test --test-name-pattern "AUTH-03 change password" src/auth/auth.inject.test.ts

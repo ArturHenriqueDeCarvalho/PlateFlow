@@ -8,6 +8,13 @@
       "when": 1790012850216,
       "tag": "0000_add-identity-tables",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790014560000,
+      "tag": "0001_plates_slug_unique",
+      "breakpoints": true
     }
   ]
 }

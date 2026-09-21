@@ -1,0 +1,12 @@
+{
+  "command": "pnpm --filter @plateflow/api exec node --import tsx --test --test-name-pattern \"AUTH-03 change password\" src/auth/auth.inject.test.ts",
+  "exitCode": 1,
+  "output": "TAP version 13\n# Subtest: AUTH-03 change password then login\nnot ok 1 - AUTH-03 change password then login\n  ---\n  duration_ms: 3007.4084\n  type: 'test'\n  location: 'C:\\\\Users\\\\luizd\\\\Projects\\\\PlateFlow\\\\apps\\\\plateflow-api\\\\src\\\\auth\\\\auth.inject.test.ts:1:5099'\n  failureType: 'testCodeFailure'\n  error: 'wrong current must be 400/401, got 404'\n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected: true\n  actual: false\n  operator: '=='\n  stack: |-\n    TestContext.<anonymous> (C:\\Users\\luizd\\Projects\\PlateFlow\\apps\\plateflow-api\\src\\auth\\auth.inject.test.ts:206:10)\n    process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    async Test.run (node:internal/test_runner/test:1125:7)\n    async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 0\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 14832.7868\n",
+  "targetTest": "AUTH-03 change password then login",
+  "targetFile": "apps/plateflow-api/src/auth/auth.inject.test.ts",
+  "expected": "Authenticated POST /api/auth/change-password with wrong current returns 400/401 { error: Senha atual incorreta. }; success 200 sets new cookie pair and old refresh 401s; login with new password succeeds; old password returns Credenciais inv\u00e1lidas.",
+  "actual": "AssertionError [ERR_ASSERTION]: wrong current must be 400/401, got 404",
+  "phase": "01",
+  "plan": "05",
+  "task": "1"
+}

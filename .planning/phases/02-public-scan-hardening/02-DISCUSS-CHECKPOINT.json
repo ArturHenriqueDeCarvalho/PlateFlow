@@ -1,0 +1,153 @@
+{
+  "phase": "2",
+  "phase_name": "Public scan hardening",
+  "timestamp": "2026-09-21T20:42:00.000Z",
+  "areas_completed": [
+    "Missed-rewrite /r/:slug in the SPA",
+    "Privacy-policy link target this phase",
+    "Unsafe destination on a live slug",
+    "Public landing look (Pix / vCard / 404)"
+  ],
+  "areas_remaining": [],
+  "decisions": {
+    "Missed-rewrite /r/:slug in the SPA": [
+      {
+        "question": "What should /r/:slug feel like for a scan?",
+        "answer": "The slug is the only correct hop. URL/WhatsApp/social: HTTP 307 (or a minimal loading flash) then the final destination — no mini-site, countdown, or CTA on the slug. Pix/vCard/404/virgin/paused still need short HTML because there is no website to 307 to. Remove the SPA localStorage public landing (SCAN-02).",
+        "options_presented": [
+          "SPA hard-bounce to server resolver",
+          "Generic wrong-host page",
+          "Delete SPA branch and rely on server.ts / vercel.json"
+        ]
+      }
+    ],
+    "Privacy-policy link target this phase": [
+      {
+        "question": "Where does the SCAN-04 footer link go this phase?",
+        "answer": "Ship a minimal public stub now so the click is not 404. Phase 5 (PRIV-01) replaces the stub with the full policy. Footer only on HTML landings (Pix/vCard/404/virgin/paused), not on 307 hops.",
+        "options_presented": [
+          "Minimal stub now",
+          "Link now, page only in Phase 5 (404 until then)",
+          "No new page — in-page block on the landing HTML"
+        ]
+      },
+      {
+        "question": "What does the stub say?",
+        "answer": "Honest short notice: what a scan stores (timestamp, device, QR/NFC source, IP in the database), operational purpose, and how to contact the gráfica. No cookie/consent banner.",
+        "options_presented": [
+          "Honest short notice",
+          "Almost empty under-construction page",
+          "You decide from existing LGPD research"
+        ]
+      },
+      {
+        "question": "Which public URL?",
+        "answer": "/privacidade — Phase 5 reuses the same route.",
+        "options_presented": [
+          "/privacidade",
+          "/privacy",
+          "You decide a stable public route outside /r/:slug"
+        ]
+      },
+      {
+        "question": "What contact appears on the stub?",
+        "answer": "Placeholder copy only (“fale com a gráfica”). Do not invent an email. Real controller contact is Phase 5.",
+        "options_presented": [
+          "Placeholder, no real email",
+          "Real email provided in this discussion",
+          "You decide a generic mailto or console-request line"
+        ]
+      }
+    ],
+    "Unsafe destination on a live slug": [
+      {
+        "question": "What happens at scan time if the live destination uses a bad scheme?",
+        "answer": "Serve a short safe-error HTML page. Do not 307. Do not pretend paused or 404.",
+        "options_presented": [
+          "Safe error HTML, no 307",
+          "Same paused page as existing paused plates",
+          "Same 404 as unknown slug"
+        ]
+      },
+      {
+        "question": "Also reject on save this phase, or scan-time only?",
+        "answer": "Both: public scan serves safe-error HTML; destination PUT/POST returns 400 for disallowed schemes. Operator destination forms (DEST-*) stay Phase 4 — this is the scheme filter only.",
+        "options_presented": [
+          "Scan and save",
+          "Scan only",
+          "You decide"
+        ]
+      },
+      {
+        "question": "What counts as official WhatsApp?",
+        "answer": "Only https://wa.me/ . api.whatsapp.com and web.whatsapp.com are invalid. Save may normalize digits to https://wa.me/{digits}.",
+        "options_presented": [
+          "https://wa.me/ only",
+          "wa.me + api.whatsapp.com + web.whatsapp.com",
+          "You decide after research"
+        ]
+      },
+      {
+        "question": "URL pasted without a scheme?",
+        "answer": "Prefix https:// and proceed. javascript:/data: still blocked because they have a scheme.",
+        "options_presented": [
+          "Prefix https://",
+          "Reject unless scheme is explicit",
+          "You decide"
+        ]
+      }
+    ],
+    "Public landing look (Pix / vCard / 404)": [
+      {
+        "question": "How to style public HTML pages?",
+        "answer": "Keep the existing pattern: Tailwind utility classes in Fastify HTML strings plus cdn.tailwindcss.com. Do not invent a parallel inline-CSS design system. Do not wire the Vite-compiled SPA CSS into /r/:slug this phase.",
+        "options_presented": [
+          "Inline CSS, no CDN",
+          "Keep Tailwind CDN as today",
+          "You decide"
+        ]
+      },
+      {
+        "question": "Does GET /api/redirects/:slug/resolve stay public?",
+        "answer": "Yes. Same handler as /r/:slug. SCAN-01 means physical plates use /r/:slug, not that the second endpoint must die.",
+        "options_presented": [
+          "Leave both public and equivalent",
+          "Only /r/:slug public",
+          "You decide"
+        ]
+      },
+      {
+        "question": "If the SPA still loads at /r/:slug, what does it do?",
+        "answer": "Delete the App.tsx public /r/:slug branch. No localStorage lookup. RedirectSimulatorModal stays in the admin console. A missed rewrite may show login/console, never a fake plate 404.",
+        "options_presented": [
+          "Delete SPA public branch",
+          "Minimal loading + window.location reload",
+          "Generic wrong-host page without localStorage"
+        ]
+      },
+      {
+        "question": "Privacy footer on HTML landings?",
+        "answer": "Small footer link “Política de privacidade” → /privacidade. Not a mid-page LGPD block on Pix/vCard.",
+        "options_presented": [
+          "Small footer link",
+          "More visible above-the-fold block",
+          "You decide"
+        ]
+      }
+    ]
+  },
+  "deferred_ideas": [],
+  "canonical_refs": [
+    ".planning/ROADMAP.md",
+    ".planning/REQUIREMENTS.md",
+    ".planning/PROJECT.md",
+    ".planning/research/FEATURES.md",
+    ".planning/codebase/ARCHITECTURE.md",
+    ".planning/codebase/CONCERNS.md",
+    ".planning/codebase/CONVENTIONS.md",
+    "apps/plateflow-api/src/infrastructure/http/routes/publicRedirectRoutes.ts",
+    "apps/plateflow-app/src/App.tsx",
+    "apps/plateflow-app/src/index.css",
+    "server.ts"
+  ]
+}

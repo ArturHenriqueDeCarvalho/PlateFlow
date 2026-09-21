@@ -1,0 +1,16 @@
+TAP version 13
+# Subtest: ANLY-04 analytics 401 and no ip
+ok 1 - ANLY-04 analytics 401 and no ip
+  ---
+  duration_ms: 3578.3031
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 16141.9261

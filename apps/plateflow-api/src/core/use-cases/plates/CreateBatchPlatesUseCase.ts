@@ -71,10 +71,13 @@ export class CreateBatchPlatesUseCase {
     const newRedirects: DynamicRedirect[] = [];
     const now = new Date().toISOString();
 
+    const batchSlug = cleanBatch.toLowerCase().replace(/[^a-z0-9-_]/g, '');
+
     for (let i = 1; i <= quantity; i++) {
       const padNum = String(i).padStart(2, '0');
       const randomSuffix = Math.random().toString(36).substring(2, 6);
-      const slug = `${cleanPrefix}-${padNum}`;
+      // Unique per lot: prefix + batch + n + entropy (avoids placa-01 collisions across lots)
+      const slug = `${cleanPrefix}-${batchSlug}-${padNum}-${randomSuffix}`;
       const plateId = `plate-${cleanBatch}-${padNum}-${randomSuffix}`;
 
       newRedirects.push({

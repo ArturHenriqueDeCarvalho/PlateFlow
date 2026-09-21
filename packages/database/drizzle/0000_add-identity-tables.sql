@@ -1,4 +1,4 @@
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id text PRIMARY KEY,
   email text NOT NULL UNIQUE,
   name text,
@@ -9,7 +9,7 @@ CREATE TABLE users (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE TABLE refresh_sessions (
+CREATE TABLE IF NOT EXISTS refresh_sessions (
   id text PRIMARY KEY,
   user_id text NOT NULL REFERENCES users(id),
   token_hash text NOT NULL UNIQUE,

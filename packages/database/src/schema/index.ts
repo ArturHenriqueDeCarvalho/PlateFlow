@@ -43,7 +43,7 @@ export const redirects = pgTable('redirects', {
 
 export const plates = pgTable('plates', {
   id: text('id').primaryKey(),
-  slug: text('slug').notNull(),
+  slug: text('slug').unique().notNull(),
   batch_identifier: text('batch_identifier').notNull(),
   template_id: text('template_id').notNull(),
   plate_number: integer('plate_number').notNull(),

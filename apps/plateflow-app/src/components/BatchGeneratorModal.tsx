@@ -62,11 +62,15 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
     const newPlates: PhysicalPlate[] = [];
     const newRedirects: DynamicRedirect[] = [];
 
+    const cleanBatch = batchId.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '-');
+    const cleanPrefix = slugPrefix.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '-');
+
     for (let i = 0; i < quantity; i++) {
       const plateNum = startNumber + i;
       const padded = plateNum.toString().padStart(2, '0');
-      const cleanPrefix = slugPrefix.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '-');
-      const slug = `${cleanPrefix}-${padded}`;
+      const entropy = Math.random().toString(36).slice(2, 6);
+      // Unique per lot: prefix + batch + n + entropy (avoids placa-01 collisions across lots)
+      const slug = `${cleanPrefix}-${cleanBatch}-${padded}-${entropy}`;
 
       const redirect: DynamicRedirect = {
         slug,
@@ -80,7 +84,7 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
       };
 
       const plate: PhysicalPlate = {
-        id: `plate-${batchId}-${padded}-${Math.random().toString(36).slice(2, 6)}`,
+        id: `plate-${batchId}-${padded}-${entropy}`,
         slug,
         templateId: template.id,
         batchIdentifier: batchId,

@@ -1,0 +1,13 @@
+{
+  "command": "pnpm --filter @plateflow/api exec node --import tsx --test --test-name-pattern \"SHOP-01 batch persist\" src/auth/auth.inject.test.ts",
+  "exitCode": 0,
+  "note": "Wave-0 fixture {quantity:1} was INVALID_RED (400 validation). After fixture plates/redirects qty 1, target test is GREEN — cookie requireAuth already from prior plans. Frontend persistBatch is the remaining Task 1 work.",
+  "targetTest": "SHOP-01 batch persist cookie gate",
+  "targetFile": "apps/plateflow-api/src/auth/auth.inject.test.ts",
+  "expected": "POST /api/plates/batch without cookies 401; with login cookies 2xx for fixture quantity 1",
+  "actual": "pass — unauth 401, authed 201",
+  "phase": "01",
+  "plan": "06",
+  "task": "1",
+  "verdict": "UNEXPECTED_GREEN_AFTER_FIXTURE_FIX"
+}

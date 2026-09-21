@@ -1,0 +1,36 @@
+✖ ANLY-04 analytics 401 and no ip (3481.5522ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 15557.6763
+
+✖ failing tests:
+
+test at src\auth\auth.inject.test.ts:1:5840
+✖ ANLY-04 analytics 401 and no ip (3481.5522ms)
+  AssertionError [ERR_ASSERTION]: $[0] must not include an ip key
+  
+  true !== false
+  
+      at assertNoIpKey (C:\Users\luizd\Projects\PlateFlow\apps\plateflow-api\src\auth\auth.inject.test.ts:68:12)
+      at <anonymous> (C:\Users\luizd\Projects\PlateFlow\apps\plateflow-api\src\auth\auth.inject.test.ts:64:32)
+      at Array.forEach (<anonymous>)
+      at assertNoIpKey (C:\Users\luizd\Projects\PlateFlow\apps\plateflow-api\src\auth\auth.inject.test.ts:64:11)
+      at TestContext.<anonymous> (C:\Users\luizd\Projects\PlateFlow\apps\plateflow-api\src\auth\auth.inject.test.ts:248:3)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+undefined
+C:\Users\luizd\Projects\PlateFlow\apps\plateflow-api:
+[ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL] Command failed with exit code 1: node --import tsx --test --test-name-pattern "ANLY-04 analytics 401 and no ip" src/auth/auth.inject.test.ts
