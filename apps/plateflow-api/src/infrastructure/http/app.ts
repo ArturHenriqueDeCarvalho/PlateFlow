@@ -12,6 +12,7 @@ import { analyticsRoutes } from './routes/analyticsRoutes.js';
 import { publicRedirectRoutes } from './routes/publicRedirectRoutes.js';
 import { ACCESS_COOKIE } from '../auth/sessionCookies.js';
 import { assertIdentityEnv, seedAdminUser } from '../auth/seedAdminUser.js';
+import { requireOrigin } from './middleware/requireOrigin.js';
 
 function parseAppOrigins(): string[] {
   return (process.env.APP_ORIGIN || '')
@@ -68,6 +69,9 @@ export function createFastifyApp() {
       signed: false,
     },
   });
+
+  // CSRF: SameSite Lax cookies + Origin allowlist on mutations (never global jwtVerify)
+  app.addHook('onRequest', requireOrigin);
 
   // Health check endpoint
   app.get('/api/health', async (_req, reply) => {
