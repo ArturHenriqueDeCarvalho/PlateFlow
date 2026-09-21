@@ -186,24 +186,49 @@ it('AUTH-01 logout clears cookies', async () => {
 });
 
 it('AUTH-03 change password then login', async () => {
+  const originalPassword = process.env.ADMIN_PASSWORD!;
+  const nextPassword = 'plateflow-test-new-pass-01';
+
   const loginRes = await login();
   const cookies = cookieJarFrom(loginRes);
-  const nextPassword = 'plateflow-test-new-pass-01';
+  assert.ok(cookies.plateflow_refresh, 'login must set plateflow_refresh');
+
+  const wrongCurrent = await app.inject({
+    method: 'POST',
+    url: '/api/auth/change-password',
+    cookies,
+    headers: { 'content-type': 'application/json' },
+    payload: {
+      currentPassword: 'not-the-current-password',
+      newPassword: nextPassword,
+    },
+  });
+  assert.ok(
+    wrongCurrent.statusCode === 400 || wrongCurrent.statusCode === 401,
+    `wrong current must be 400/401, got ${wrongCurrent.statusCode}`,
+  );
+  const wrongBody = wrongCurrent.json() as { error?: string };
+  assert.equal(wrongBody.error, 'Senha atual incorreta.');
+
   const changeRes = await app.inject({
     method: 'POST',
     url: '/api/auth/change-password',
     cookies,
     headers: { 'content-type': 'application/json' },
     payload: {
-      currentPassword: process.env.ADMIN_PASSWORD,
+      currentPassword: originalPassword,
       newPassword: nextPassword,
     },
   });
   assert.equal(changeRes.statusCode, 200);
-
-  const relogin = await login(process.env.ADMIN_EMAIL, nextPassword);
-  assert.equal(relogin.statusCode, 200);
-  assertHttpOnlyCookie(relogin, 'plateflow_access');
+  const newCookies = cookieJarFrom(changeRes);
+  assertHttpOnlyCookie(changeRes, 'plateflow_access');
+  assertHttpOnlyCookie(changeRes, 'plateflow_refresh');
+  assert.notEqual(
+    newCookies.plateflow_refresh,
+    cookies.plateflow_refresh,
+    'change-password must issue a new refresh cookie',
+  );
 
   const staleRefresh = await app.inject({
     method: 'POST',
@@ -211,6 +236,35 @@ it('AUTH-03 change password then login', async () => {
     cookies: { plateflow_refresh: cookies.plateflow_refresh },
   });
   assert.equal(staleRefresh.statusCode, 401);
+
+  const meStill = await app.inject({
+    method: 'GET',
+    url: '/api/auth/me',
+    cookies: newCookies,
+  });
+  assert.equal(meStill.statusCode, 200, 'operator stays signed in on new cookie pair');
+
+  const relogin = await login(process.env.ADMIN_EMAIL, nextPassword);
+  assert.equal(relogin.statusCode, 200);
+  assertHttpOnlyCookie(relogin, 'plateflow_access');
+
+  const oldLogin = await login(process.env.ADMIN_EMAIL, originalPassword);
+  assert.equal(oldLogin.statusCode, 401);
+  const oldBody = oldLogin.json() as { error?: string };
+  assert.equal(oldBody.error, 'Credenciais inválidas.');
+
+  // Restore seed password so later suite tests keep working.
+  const restore = await app.inject({
+    method: 'POST',
+    url: '/api/auth/change-password',
+    cookies: cookieJarFrom(relogin),
+    headers: { 'content-type': 'application/json' },
+    payload: {
+      currentPassword: nextPassword,
+      newPassword: originalPassword,
+    },
+  });
+  assert.equal(restore.statusCode, 200);
 });
 
 it('ANLY-04 analytics 401 and no ip', async () => {
