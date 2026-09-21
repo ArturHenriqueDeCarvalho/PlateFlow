@@ -1,0 +1,1 @@
+No external API integration: Phase 1 wires first-party Fastify plugins (`@fastify/jwt`, `@fastify/cookie`) and the existing Postgres/Drizzle schema; it does not call a third-party auth, payments, or SaaS API.

@@ -30,7 +30,16 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. A logged-in operator can change their own password and then sign in with the new password.
   3. Opening inventory or analytics without a session is refused; readings in the UI never show IP.
   4. After the auth swap, admin can still manage plate templates and generate print lots with QR stamped on artwork.
-**Plans:** TBD
+**Plans:** 6 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Wave 0 Fastify inject suite for AUTH-01/03, ANLY-04, SHOP-01
+- [ ] 01-02-PLAN.md — Walking-skeleton cookie login, /me, GET /api/plates lock, CORS allowlist
+- [ ] 01-03-PLAN.md — Refresh rotation, 8h ceiling, logout, Origin check, SPA silent refresh
+- [ ] 01-04-PLAN.md — Inventory/analytics GET locks and IP omitted from DTOs/UI
+- [ ] 01-05-PLAN.md — Header account menu own-password change with refresh revoke
+- [ ] 01-06-PLAN.md — Cookie print-lot persist and ZIP-then-login (D-07)
+
 **UI hint:** yes
 
 ### Phase 2: Public scan hardening
@@ -93,7 +102,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Identity spine | 0/TBD | Not started | - |
+| 1. Identity spine | 0/6 | Not started | - |
 | 2. Public scan hardening | 0/TBD | Not started | - |
 | 3. Users and ownership | 0/TBD | Not started | - |
 | 4. Operator slice | 0/TBD | Not started | - |
