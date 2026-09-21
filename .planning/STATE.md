@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 01
 current_phase_name: Identity spine
 status: executing
-stopped_at: Phase 1 UI-SPEC approved
-last_updated: "2026-09-21T17:32:45.157Z"
+stopped_at: Completed 01-01-PLAN.md
+last_updated: "2026-09-21T17:41:54.065Z"
 last_activity: 2026-09-21
 last_activity_desc: Phase 1 execution started
-state_head: ce778b040b61d246e4481fc73a01c5622cea30f8
+state_head: dfd6372a912651880dde9c245890f621ec843f83
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 6
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-09-21)
 ## Current Position
 
 Phase: 01 (Identity spine) — READY TO EXECUTE
-Plan: 1 of 6
+Plan: 2 of 6
 Status: Ready to execute
 Last activity: 2026-09-21 — Phase 1 execution started
 
@@ -54,6 +54,11 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: —
 
 *Updated after each plan completion*
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 01 P01 | 6 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -67,6 +72,9 @@ Recent decisions affecting current work:
 - Custody: `owner_id` ∪ `assigned_user_id`; authorize in use cases with SQL slice
 - DEST-05: existing `social` type under owner rules — do not productize
 - PRIV-04 (delete scan logs) stays v2; v1 ships export + account deactivate/delete
+- [Phase 01]: Keep node:test + tsx as the API runner; do not add Jest or Vitest — Wave 0 Nyquist net must stay framework-free so later plans can --test-name-pattern green subsets
+- [Phase 01]: Import createFastifyApp via .js specifier so tsc --noEmit passes — Plan asked for a .ts import; API ESM and tsc use .js specifiers like server.ts
+- [Phase 01]: Wave 0 is RED-only; GREEN belongs to later identity-spine plans — This plan only names failing contracts; implementing JWT/cookies in 01-01 would skip the Nyquist net
 
 ### Pending Todos
 
@@ -86,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-21T17:09:34.291Z
-Stopped at: Phase 1 UI-SPEC approved
-Resume file: .planning/phases/01-identity-spine/01-UI-SPEC.md
+Last session: 2026-09-21T17:41:36.103Z
+Stopped at: Completed 01-01-PLAN.md
+Resume file: None
