@@ -217,6 +217,25 @@ it('ANLY-04 analytics 401 and no ip', async () => {
   const unauth = await app.inject({ method: 'GET', url: '/api/analytics' });
   assert.equal(unauth.statusCode, 401);
 
+  const { DrizzleAnalyticsRepository } = await import(
+    '../infrastructure/database/DrizzleAnalyticsRepository.js'
+  );
+  const seeded = await new DrizzleAnalyticsRepository().create({
+    id: `anly04-seed-${Date.now()}`,
+    redirectSlug: 'anly04-seed-slug',
+    slug: 'anly04-seed-slug',
+    source: 'qr',
+    referrer: 'test',
+    userAgent: 'anly04-agent',
+    deviceType: 'Desktop',
+    device: 'Desktop',
+    browser: 'test',
+    os: 'test',
+    ip: '203.0.113.50',
+    timestamp: new Date().toISOString(),
+  });
+  assert.ok(seeded.id, 'seed create must persist a row (ip may remain in DB)');
+
   const loginRes = await login();
   const authed = await app.inject({
     method: 'GET',
@@ -224,7 +243,9 @@ it('ANLY-04 analytics 401 and no ip', async () => {
     cookies: cookieJarFrom(loginRes),
   });
   assert.equal(authed.statusCode, 200);
-  assertNoIpKey(authed.json());
+  const body = authed.json();
+  assert.ok(Array.isArray(body) && body.length > 0, 'GET must return at least the seeded log');
+  assertNoIpKey(body);
 });
 
 it('ANLY-04 inventory GETs 401', async () => {
