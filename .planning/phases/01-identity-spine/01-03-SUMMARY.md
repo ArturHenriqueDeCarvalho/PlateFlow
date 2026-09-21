@@ -123,7 +123,7 @@ Each task was committed atomically:
 2. **Task 2: Origin check on mutating requests** - `8b37f7d` (feat)
 3. **Task 3: SPA silent refresh wrapper** - `bddd290` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `238a2aa` (docs: complete plan)
 
 _Note: RED inject contracts already existed from 01-01; this plan shipped GREEN only._
 
