@@ -192,6 +192,10 @@ export const StorageService = {
   async fetchTemplates(): Promise<PlateTemplate[]> {
     try {
       const res = await apiFetch('/api/templates');
+      if (res.status === 401) {
+        this.logout();
+        return [];
+      }
       if (res.ok) {
         const templates: PlateTemplate[] = await res.json();
         safeSetItem(STORAGE_KEYS.TEMPLATES, templates);
@@ -253,6 +257,10 @@ export const StorageService = {
   async fetchRedirects(): Promise<DynamicRedirect[]> {
     try {
       const res = await apiFetch('/api/redirects');
+      if (res.status === 401) {
+        this.logout();
+        return [];
+      }
       if (res.ok) {
         const redirects: DynamicRedirect[] = await res.json();
         safeSetItem(STORAGE_KEYS.REDIRECTS, redirects);
@@ -498,6 +506,10 @@ export const StorageService = {
   async fetchAnalytics(): Promise<AnalyticsLog[]> {
     try {
       const res = await apiFetch('/api/analytics');
+      if (res.status === 401) {
+        this.logout();
+        return [];
+      }
       if (res.ok) {
         const logs: AnalyticsLog[] = await res.json();
         safeSetItem(STORAGE_KEYS.ANALYTICS, logs);
