@@ -389,6 +389,13 @@ export default function App() {
           StorageService.logout();
           setUser(null);
         }}
+        onPasswordChanged={() => {
+          showToast('Senha alterada.');
+        }}
+        onSessionExpired={() => {
+          StorageService.logout();
+          setUser(null);
+        }}
       />
 
       {/* Main Content */}

@@ -159,6 +159,30 @@ export const StorageService = {
     clearAuthUserCache();
   },
 
+  async changePassword(
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<{ success: boolean; error?: string; status?: number }> {
+    try {
+      const res = await apiFetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      if (res.ok) {
+        return { success: true, status: res.status };
+      }
+      const data = await res.json().catch(() => ({}));
+      return {
+        success: false,
+        status: res.status,
+        error: typeof data?.error === 'string' ? data.error : 'Não foi possível alterar a senha.',
+      };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Erro de conexão com o servidor.' };
+    }
+  },
+
   getAuthUser(): AuthUser | null {
     return safeGetItem<AuthUser | null>(STORAGE_KEYS.AUTH_USER, null);
   },
