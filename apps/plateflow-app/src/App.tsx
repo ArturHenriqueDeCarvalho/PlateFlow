@@ -385,15 +385,15 @@ export default function App() {
         onResetData={handleResetData}
         user={user}
         onOpenLogin={() => {}}
-        onLogout={() => {
-          StorageService.logout();
+        onLogout={async () => {
+          await StorageService.logout();
           setUser(null);
         }}
         onPasswordChanged={() => {
           showToast('Senha alterada.');
         }}
-        onSessionExpired={() => {
-          StorageService.logout();
+        onSessionExpired={async () => {
+          await StorageService.logout();
           setUser(null);
         }}
       />

@@ -154,8 +154,12 @@ export const StorageService = {
     }
   },
 
-  logout(): void {
-    void fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+  async logout(): Promise<void> {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    } catch {
+      // Best-effort revoke; always clear local profile cache.
+    }
     clearAuthUserCache();
   },
 
