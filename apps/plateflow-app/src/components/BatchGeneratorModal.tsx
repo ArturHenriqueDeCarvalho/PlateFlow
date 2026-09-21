@@ -15,6 +15,8 @@ interface BatchGeneratorModalProps {
   isOpen: boolean;
   onClose: () => void;
   onBatchCreated: (plates: PhysicalPlate[], redirects: DynamicRedirect[]) => void;
+  /** D-07: notify App while ZIP/canvas is running so LoginScreen waits. */
+  onProcessingChange?: (processing: boolean) => void;
 }
 
 export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
@@ -23,6 +25,7 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
   isOpen,
   onClose,
   onBatchCreated,
+  onProcessingChange,
 }) => {
   const [selectedTemplateId, setSelectedTemplateId] = useState(templates[0]?.id || '');
   const [batchId, setBatchId] = useState(
@@ -36,6 +39,10 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, currentSlug: '' });
   const [downloadReady, setDownloadReady] = useState<{ url: string; filename: string; count: number } | null>(null);
+
+  useEffect(() => {
+    onProcessingChange?.(isProcessing);
+  }, [isProcessing, onProcessingChange]);
 
   useEffect(() => {
     if (!selectedTemplateId && templates.length > 0) {

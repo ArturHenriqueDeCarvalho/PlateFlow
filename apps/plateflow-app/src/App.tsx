@@ -54,6 +54,10 @@ export default function App() {
 
   // Modals state
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
+  /** D-07: true while BatchGeneratorModal is composing ZIP / canvas. */
+  const [batchInFlight, setBatchInFlight] = useState(false);
+  /** D-07: refresh failed during ZIP — apply LoginScreen only after processing ends. */
+  const [pendingLogout, setPendingLogout] = useState(false);
   const [editingRedirect, setEditingRedirect] = useState<{
     redirect: DynamicRedirect;
     plate?: PhysicalPlate;
@@ -124,6 +128,24 @@ export default function App() {
         setIsCheckingAuth(false);
       });
   }, []);
+
+  useEffect(() => {
+    StorageService.setBatchInFlight(batchInFlight);
+  }, [batchInFlight]);
+
+  useEffect(() => {
+    StorageService.setOnPendingLogout(() => {
+      setPendingLogout(true);
+    });
+    return () => StorageService.setOnPendingLogout(null);
+  }, []);
+
+  useEffect(() => {
+    if (!batchInFlight && pendingLogout) {
+      setPendingLogout(false);
+      setUser(null);
+    }
+  }, [batchInFlight, pendingLogout]);
 
   useEffect(() => {
     if (!clientRedirectSlug) return;
@@ -549,6 +571,7 @@ export default function App() {
         isOpen={isBatchModalOpen}
         onClose={() => setIsBatchModalOpen(false)}
         onBatchCreated={handleBatchCreated}
+        onProcessingChange={setBatchInFlight}
       />
 
       {editingRedirect && (

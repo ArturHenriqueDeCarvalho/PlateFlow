@@ -62,6 +62,18 @@ function isAuthBootUrl(path: string): boolean {
 }
 
 let refreshInFlight: Promise<boolean> | null = null;
+/** When true, failed refresh must not clear the session until ZIP finishes (D-07). */
+let batchInFlight = false;
+let onPendingLogout: (() => void) | null = null;
+
+function notifySessionDead(): void {
+  if (batchInFlight) {
+    onPendingLogout?.();
+    return;
+  }
+  clearAuthUserCache();
+  void fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+}
 
 async function postRefreshOnce(): Promise<boolean> {
   if (refreshInFlight) return refreshInFlight;
@@ -104,8 +116,7 @@ async function apiFetch(input: RequestInfo | URL, init: RequestInit = {}): Promi
 
   const refreshed = await postRefreshOnce();
   if (!refreshed) {
-    clearAuthUserCache();
-    void fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+    notifySessionDead();
     return first;
   }
 
@@ -134,6 +145,25 @@ export const StorageService = {
   // ==========================================
   // AUTHENTICATION (SUPABASE / ADMIN)
   // ==========================================
+
+  /** D-07: print-lot ZIP in flight — defer session clear until processing ends. */
+  setBatchInFlight(value: boolean): void {
+    batchInFlight = value;
+  },
+
+  setOnPendingLogout(handler: (() => void) | null): void {
+    onPendingLogout = handler;
+  },
+
+  /** Clear session unless a print-lot ZIP is in flight (D-07). */
+  clearSessionUnlessBatchInFlight(): void {
+    if (batchInFlight) {
+      onPendingLogout?.();
+      return;
+    }
+    void this.logout();
+  },
+
   async login(email: string, password: string): Promise<{ success: boolean; user?: AuthUser; error?: string }> {
     forgetLegacyTokens();
     try {
@@ -202,10 +232,10 @@ export const StorageService = {
           return data.user;
         }
       }
-      this.logout();
+      this.clearSessionUnlessBatchInFlight();
       return null;
     } catch {
-      this.logout();
+      this.clearSessionUnlessBatchInFlight();
       return null;
     }
   },
@@ -221,7 +251,7 @@ export const StorageService = {
     try {
       const res = await apiFetch('/api/templates');
       if (res.status === 401) {
-        this.logout();
+        this.clearSessionUnlessBatchInFlight();
         return [];
       }
       if (res.ok) {
@@ -286,7 +316,7 @@ export const StorageService = {
     try {
       const res = await apiFetch('/api/redirects');
       if (res.status === 401) {
-        this.logout();
+        this.clearSessionUnlessBatchInFlight();
         return [];
       }
       if (res.ok) {
@@ -340,7 +370,7 @@ export const StorageService = {
     try {
       const res = await apiFetch('/api/plates');
       if (res.status === 401) {
-        this.logout();
+        this.clearSessionUnlessBatchInFlight();
         return [];
       }
       if (res.ok) {
@@ -550,7 +580,7 @@ export const StorageService = {
     try {
       const res = await apiFetch('/api/analytics');
       if (res.status === 401) {
-        this.logout();
+        this.clearSessionUnlessBatchInFlight();
         return [];
       }
       if (res.ok) {
