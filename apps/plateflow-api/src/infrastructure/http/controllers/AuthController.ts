@@ -2,6 +2,7 @@ import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { LoginUseCase } from '../../../core/use-cases/auth/LoginUseCase.js';
 import type { RefreshSessionUseCase } from '../../../core/use-cases/auth/RefreshSessionUseCase.js';
 import type { LogoutUseCase } from '../../../core/use-cases/auth/LogoutUseCase.js';
+import type { ChangePasswordUseCase } from '../../../core/use-cases/auth/ChangePasswordUseCase.js';
 import type { ITokenIssuer } from '../../../core/ports/ITokenIssuer.js';
 import {
   ACCESS_COOKIE,
@@ -16,6 +17,7 @@ export class AuthController {
     private loginUseCase: LoginUseCase,
     private refreshSessionUseCase: RefreshSessionUseCase,
     private logoutUseCase: LogoutUseCase,
+    private changePasswordUseCase: ChangePasswordUseCase,
     private tokenIssuer: ITokenIssuer,
   ) {}
 
@@ -101,5 +103,47 @@ export class AuthController {
       return reply.status(401).send({ error: 'Sessão inválida ou expirada.' });
     }
     return reply.send({ user });
+  }
+
+  async changePassword(
+    req: FastifyRequest<{ Body: { currentPassword?: string; newPassword?: string } }>,
+    reply: FastifyReply,
+  ) {
+    const userId = req.user?.sub;
+    if (!userId) {
+      return reply.status(401).send({ error: 'Sessão inválida ou expirada.' });
+    }
+
+    try {
+      const currentPassword = req.body?.currentPassword ?? '';
+      const newPassword = req.body?.newPassword ?? '';
+      const result = await this.changePasswordUseCase.execute(userId, currentPassword, newPassword);
+      const accessExp = accessExpiresAt(result.sessionExpiresAt);
+      const accessToken = await this.tokenIssuer.signAccess(
+        {
+          sub: result.user.id,
+          role: result.user.role,
+          email: result.user.email,
+          sid: result.sessionId,
+        },
+        accessExp,
+      );
+      setSessionCookies(reply, {
+        accessToken,
+        refreshToken: result.refreshToken,
+        accessExpiresAt: accessExp,
+        sessionExpiresAt: result.sessionExpiresAt,
+      });
+      return reply.send({ user: result.user });
+    } catch (err: any) {
+      const message = err?.message || 'Não foi possível alterar a senha.';
+      if (
+        message === 'Senha atual incorreta.' ||
+        message === 'Informe a senha atual e a nova senha.'
+      ) {
+        return reply.status(400).send({ error: message });
+      }
+      return reply.status(500).send({ error: message });
+    }
   }
 }

@@ -8,6 +8,7 @@ import { FastifyTokenIssuer } from '../../auth/FastifyTokenIssuer.js';
 import { LoginUseCase } from '../../../core/use-cases/auth/LoginUseCase.js';
 import { RefreshSessionUseCase } from '../../../core/use-cases/auth/RefreshSessionUseCase.js';
 import { LogoutUseCase } from '../../../core/use-cases/auth/LogoutUseCase.js';
+import { ChangePasswordUseCase } from '../../../core/use-cases/auth/ChangePasswordUseCase.js';
 
 const loginBodySchema = {
   type: 'object',
@@ -19,6 +20,16 @@ const loginBodySchema = {
   },
 } as const;
 
+const changePasswordBodySchema = {
+  type: 'object',
+  required: ['currentPassword', 'newPassword'],
+  additionalProperties: false,
+  properties: {
+    currentPassword: { type: 'string', minLength: 1 },
+    newPassword: { type: 'string', minLength: 1 },
+  },
+} as const;
+
 export const authRoutes: FastifyPluginAsync = async (app) => {
   const userRepo = new DrizzleUserRepository();
   const refreshRepo = new DrizzleRefreshSessionRepository();
@@ -27,6 +38,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     new LoginUseCase(userRepo, hasher, refreshRepo),
     new RefreshSessionUseCase(userRepo, refreshRepo),
     new LogoutUseCase(refreshRepo),
+    new ChangePasswordUseCase(userRepo, hasher, refreshRepo),
     new FastifyTokenIssuer(app),
   );
 
@@ -38,4 +50,9 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   app.post('/refresh', (req, reply) => controller.refresh(req, reply));
   app.post('/logout', (req, reply) => controller.logout(req, reply));
   app.get('/me', { preHandler: [requireAuth] }, (req, reply) => controller.me(req, reply));
+  app.post(
+    '/change-password',
+    { preHandler: [requireAuth], schema: { body: changePasswordBodySchema } },
+    (req: any, reply) => controller.changePassword(req, reply),
+  );
 };
