@@ -105,7 +105,7 @@ Each task was committed atomically:
 2. **Task 1 GREEN: persistBatch** - `59549cb` (feat)
 3. **Task 2: D-07 pendingLogout** - `9436acd` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `12241e1` (docs: complete plan)
 
 _Note: Inject was unexpected-green after fixture fix (API requireAuth already present); frontend persist still landed as GREEN feat._
 
