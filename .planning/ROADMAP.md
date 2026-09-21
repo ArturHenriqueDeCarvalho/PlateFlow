@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Opening inventory or analytics without a session is refused; readings in the UI never show IP.
   4. After the auth swap, admin can still manage plate templates and generate print lots with QR stamped on artwork.
 
-**Plans:** 3/6 plans executed
+**Plans:** 4/6 plans executed
 
 Plans:
 **Wave 1**
@@ -48,7 +48,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 01-04-PLAN.md — Inventory/analytics GET locks and IP omitted from DTOs/UI
+- [x] 01-04-PLAN.md — Inventory/analytics GET locks and IP omitted from DTOs/UI
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -132,7 +132,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Identity spine | 3/6 | In Progress|  |
+| 1. Identity spine | 4/6 | In Progress|  |
 | 2. Public scan hardening | 0/TBD | Not started | - |
 | 3. Users and ownership | 0/TBD | Not started | - |
 | 4. Operator slice | 0/TBD | Not started | - |

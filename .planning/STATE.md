@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 1
 current_phase_name: Identity spine
 status: executing
-stopped_at: Completed 01-03-PLAN.md
-last_updated: "2026-09-21T18:54:25.922Z"
+stopped_at: Completed 01-04-PLAN.md
+last_updated: "2026-09-21T19:02:43.227Z"
 last_activity: 2026-09-21
 last_activity_desc: Phase 1 execution started
-state_head: bddd290ba3f201a951ce3691b702b1568203c147
+state_head: 1824f67a5b93b95676b9588bc4d5ca34cd9336a9
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 6
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-09-21)
 ## Current Position
 
 Phase: 1 (Identity spine) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-09-21 — Phase 1 execution started
 
@@ -61,6 +61,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P01 | 6 min | 2 tasks | 2 files |
 | Phase 01 P02 | 2min | 3 tasks | 30 files |
 | Phase 01 P03 | 6 min | 3 tasks | 11 files |
+| Phase 01 P04 | 6 min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,8 @@ Recent decisions affecting current work:
 - [Phase 1]: Task 2/3 of 01-02 needed no extra commits — migrate already applied; inject greens from Task 1
 - [Phase 1]: requireAuth checks refresh_sessions.sid revoked/expired so logout 401s /me with stale access cookie
 - [Phase 1]: D-07 pendingLogout / ZIP-in-flight deferred to plan 06 — failed refresh clears AUTH_USER immediately
+- [Phase 1]: Strengthen ANLY-04 analytics inject to seed a row with ip so no-ip assert is non-vacuous
+- [Phase 1]: Keep AnalyticsLog.ip optional on the shared type for the write path; never serialize on GET
 
 ### Pending Todos
 
@@ -100,6 +103,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-21T18:54:25.898Z
-Stopped at: Completed 01-03-PLAN.md
+Last session: 2026-09-21T19:02:43.193Z
+Stopped at: Completed 01-04-PLAN.md
 Resume file: None

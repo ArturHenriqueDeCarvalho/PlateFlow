@@ -61,7 +61,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **ANLY-01**: User/admin can filter readings by date range within their slice
 - [ ] **ANLY-02**: User/admin can see a device breakdown (iOS / Android / Desktop / Other) within their slice
 - [ ] **ANLY-03**: User/admin can see QR vs NFC source counts within their slice
-- [ ] **ANLY-04**: Inventory and analytics GETs require auth; response DTOs and UI omit IP (IP may remain in the database)
+- [x] **ANLY-04**: Inventory and analytics GETs require auth; response DTOs and UI omit IP (IP may remain in the database)
 
 ### Privacy
 
@@ -150,7 +150,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ANLY-01 | Phase 5 | Pending |
 | ANLY-02 | Phase 5 | Pending |
 | ANLY-03 | Phase 5 | Pending |
-| ANLY-04 | Phase 1 | Pending |
+| ANLY-04 | Phase 1 | Complete |
 | PRIV-01 | Phase 5 | Pending |
 | PRIV-02 | Phase 5 | Pending |
 | PRIV-03 | Phase 5 | Pending |
