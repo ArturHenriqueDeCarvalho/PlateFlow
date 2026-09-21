@@ -310,11 +310,40 @@ it('ANLY-04 inventory GETs 401', async () => {
 });
 
 it('SHOP-01 batch persist cookie gate', async () => {
+  const now = new Date().toISOString();
+  const slug = `shop01-${Date.now().toString(36)}-01`;
+  const fixture = {
+    plates: [
+      {
+        id: `plate-shop01-${Date.now()}`,
+        slug,
+        templateId: 'tpl-shop01',
+        batchIdentifier: 'SHOP01',
+        plateNumber: 1,
+        customerNotes: 'Placa #01',
+        nfcWritten: false,
+        createdAt: now,
+      },
+    ],
+    redirects: [
+      {
+        slug,
+        type: 'url',
+        title: 'Placa #01',
+        destinationUrl: '',
+        status: 'virgin',
+        clicks: 0,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ],
+  };
+
   const unauth = await app.inject({
     method: 'POST',
     url: '/api/plates/batch',
     headers: { 'content-type': 'application/json' },
-    payload: { quantity: 1 },
+    payload: fixture,
   });
   assert.equal(unauth.statusCode, 401);
 
@@ -324,9 +353,13 @@ it('SHOP-01 batch persist cookie gate', async () => {
     url: '/api/plates/batch',
     cookies: cookieJarFrom(loginRes),
     headers: { 'content-type': 'application/json' },
-    payload: { quantity: 1 },
+    payload: fixture,
   });
-  assert.equal(authed.statusCode, 200);
+  // CreateBatch returns 201; accept any 2xx for the cookie gate.
+  assert.ok(
+    authed.statusCode >= 200 && authed.statusCode < 300,
+    `expected 2xx with cookies, got ${authed.statusCode}: ${authed.body}`,
+  );
 });
 
 it('SCAN safety public /r/:slug', async () => {
