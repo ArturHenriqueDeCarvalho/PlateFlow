@@ -47,7 +47,6 @@ export class DrizzleAnalyticsRepository implements IAnalyticsRepository {
       deviceType: (r.device_type as any) || 'Outro',
       browser: r.browser || '',
       os: r.os || '',
-      ip: r.ip || '',
       timestamp: r.timestamp ? r.timestamp.toISOString() : new Date().toISOString(),
     };
   }
