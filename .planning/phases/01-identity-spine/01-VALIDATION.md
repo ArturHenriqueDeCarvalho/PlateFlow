@@ -49,6 +49,7 @@ created: "2026-09-21"
 | 1-00-07 | 00 | 0 | SHOP-01 | — | `POST /api/plates/batch` 401 without cookie; 200 with cookie (fixture qty 1) | inject | `pnpm --filter @plateflow/api test` | ❌ W0 | ⬜ pending |
 | 1-00-08 | 00 | 0 | SCAN safety | T-1-05 | `GET /r/:slug` still not 401 (fixture or 404 HTML, not login JSON) | inject | `pnpm --filter @plateflow/api test` | ❌ W0 | ⬜ pending |
 | 1-00-09 | 00 | 0 | AUTH-01 | T-1-03 | Foreign origin + credentials must not allowlist `https://evil.example` | inject | `pnpm --filter @plateflow/api test` | ❌ W0 | ⬜ pending |
+| 1-00-10 | 00 | 0 | AUTH-01 | T-1-10 | POST/PUT/PATCH/DELETE with Origin `https://evil.example` returns 403 | inject | `pnpm --filter @plateflow/api test` | ❌ W0 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -56,7 +57,7 @@ created: "2026-09-21"
 
 ## Wave 0 Requirements
 
-- [ ] `apps/plateflow-api/src/auth/auth.inject.test.ts` — AUTH-01/03, ANLY-04, SHOP-01 persist gate, public `/r/:slug`, CORS allowlist
+- [ ] `apps/plateflow-api/src/auth/auth.inject.test.ts` — AUTH-01/03, ANLY-04, SHOP-01 persist gate, public `/r/:slug`, CORS allowlist, foreign-Origin mutation 403
 - [ ] `apps/plateflow-api/package.json` `test` script: `node --import tsx --test src/**/*.test.ts`
 - [ ] Test `JWT_SECRET` / admin env fixtures; `NODE_ENV=test`
 - [ ] Framework install: none — `tsx` already in API `devDependencies`

@@ -550,21 +550,13 @@ Reuse `Modal`, `Input`, `Button`, `Card` from `components/ui`. Portuguese copy a
 
 **If this table is empty:** n/a — six discretion/tooling assumptions remain.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Drizzle baseline vs custom SQL**
-   - What we know: no `packages/database/drizzle/` folder; `migrate.ts` does not apply SQL; prod schema came from `db:push`.
-   - What's unclear: whether `generate --custom` is available on the pinned kit without upgrading to `0.31.11`.
-   - Recommendation: try custom generate; fallback to handwritten SQL + kit meta. Never apply a full-schema CREATE.
+1. **Drizzle baseline vs custom SQL** — RESOLVED: Custom SQL for `users` + `refresh_sessions` only (01-02). Try `drizzle-kit generate --custom` on kit `^0.31.10`; if the flag is missing, hand-write SQL plus kit journal. Never apply a full-schema CREATE.
 
-2. **Does `/api/auth/me` use `requireAuth` or duplicate jwtVerify?**
-   - What we know: today `me` reimplements the prefix check.
-   - Recommendation: same `requireAuth` preHandler as other private routes (DRY).
+2. **Does `/api/auth/me` use `requireAuth` or duplicate jwtVerify?** — RESOLVED: GET `/api/auth/me` uses the same `requireAuth` preHandler as other private routes (01-02). `AuthController.me` does not call `jwtVerify` itself.
 
-3. **PWA installed on the same origin**
-   - What we know: D-02 same-origin. Manifest exists.
-   - What's unclear: whether a previously installed PWA cached an old `storageService` that still writes Bearer.
-   - Recommendation: bump SW/cache if one exists; grep service worker. If none, skip.
+3. **PWA installed on the same origin** — RESOLVED: 01-02 greps the app for a service worker; if none is registered, do not add one (no cache bump). If a registration exists, bump that cache so installed PWAs drop Bearer `storageService`.
 
 ## Environment Availability
 
