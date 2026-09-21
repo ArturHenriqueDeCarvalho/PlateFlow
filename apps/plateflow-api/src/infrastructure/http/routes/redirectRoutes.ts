@@ -12,6 +12,6 @@ export const redirectRoutes: FastifyPluginAsync = async (app) => {
     new UpdateRedirectUseCase(redirectRepo)
   );
 
-  app.get('/', (req, reply) => controller.getAll(req, reply));
+  app.get('/', { preHandler: [requireAuth] }, (req, reply) => controller.getAll(req, reply));
   app.put('/:slug', { preHandler: [requireAuth] }, (req: any, reply) => controller.update(req, reply));
 };
