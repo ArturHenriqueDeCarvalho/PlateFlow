@@ -1,9 +1,10 @@
 ---
 phase: 01-identity-spine
-verified: 2026-09-21T19:30:38Z
-status: human_needed
-score: 4/5 must-haves verified
+verified: 2026-09-21T20:15:00Z
+status: passed
+score: 5/5 must-haves verified
 covered_files:
+
   - .planning/REQUIREMENTS.md
   - .planning/phases/01-identity-spine/01-01-PLAN.md
   - .planning/phases/01-identity-spine/01-01-SUMMARY.md
@@ -19,6 +20,7 @@ covered_files:
   - .planning/phases/01-identity-spine/01-06-SUMMARY.md
   - apps/plateflow-api/package.json
   - apps/plateflow-api/src/auth/auth.inject.test.ts
+  - apps/plateflow-api/src/auth/spa-identity-contracts.test.ts
   - apps/plateflow-api/src/core/ports/IPasswordHasher.ts
   - apps/plateflow-api/src/core/ports/ITokenIssuer.ts
   - apps/plateflow-api/src/core/repositories/IRefreshSessionRepository.ts
@@ -48,6 +50,7 @@ covered_files:
   - apps/plateflow-app/src/components/DashboardOverview.tsx
   - apps/plateflow-app/src/components/Header.tsx
   - apps/plateflow-app/src/components/LoginScreen.tsx
+  - apps/plateflow-app/src/components/ui/Modal.tsx
   - apps/plateflow-app/src/services/storageService.ts
   - packages/database/drizzle/0000_add-identity-tables.sql
   - packages/database/drizzle/0001_plates_slug_unique.sql
@@ -59,8 +62,9 @@ covered_files:
   - packages/database/src/schema/index.ts
   - packages/types/src/index.ts
   - turbo.json
-covered_digest: "v1:sha256:63f303f25c87ab9207384a637374b993a5e433eb7120f59d544ab62e898b7092"
-behavior_unverified: 1
+
+covered_digest: "v1:sha256:b95c8038f6e29865aa6092bc2be1c7871a44efd4bc04a2db450cfc9156b4b9ab"
+behavior_unverified: 0
 overrides_applied: 0
 mvp_goal_format: discrepancy
 mvp_goal_note: "ROADMAP Goal is not user-story shaped (user-story.validate=false). Verification used PLAN-body story: As a gráfica operator, I want to reach the console only with a signed session, so that inventory is no longer public and the admin print console still generates lots. Recommend /gsd mvp-phase 1 to reformat ROADMAP Goal."
@@ -68,12 +72,9 @@ decision_coverage:
   honored: 7
   total: 7
   not_honored: []
-behavior_unverified_items:
-  - truth: "Keep BatchGeneratorModal mounted and isProcessing until the blob download starts; never swap to LoginScreen while the progress bar is visible (D-07)"
-    test: "Start a print lot so ZIP compose runs; force access expiry mid-compose (or trigger pendingLogout); watch progress bar and LoginScreen timing"
-    expected: "ZIP download starts while BatchGeneratorModal stays mounted; LoginScreen appears only after download/processing ends — never during the progress bar"
-    why_human: "pendingLogout/batchInFlight wiring is present but no automated test exercises the ZIP-then-login state transition"
+behavior_unverified_items: []
 human_verification:
+
   - test: "On the unified host, submit LoginScreen with seeded admin"
     expected: "Console appears after /me; inventory loads; a logged-out tab does not show Header"
     why_human: "End-to-end cookie session + SPA paint cannot be proven by inject alone"
@@ -91,9 +92,9 @@ human_verification:
 # Phase 1: Identity spine Verification Report
 
 **Phase Goal:** Operators reach the console only with a signed session, inventory is no longer public, and the admin print console still generates lots.
-**Verified:** 2026-09-21T19:30:38Z
-**Status:** human_needed
-**Re-verification:** No — initial verification
+**Verified:** 2026-09-21T20:15:00Z
+**Status:** passed
+**Re-verification:** Yes — UAT 4/4 passed; fingerprint refreshed after Nyquist tests and Modal portal fix
 **Mode:** mvp (ROADMAP Goal format discrepancy — see User Flow Coverage)
 
 ## MVP note
@@ -111,7 +112,7 @@ User story: «As a gráfica operator, I want to reach the console only with a si
 | Stay signed / log out / `/me` | Session cookies + logout revoke | inject refresh/logout/me PASS; forged `mock_token_admin_*` 401 | ✓ |
 | Inventory private | Unauthenticated GETs refused | `requireAuth` on plates/templates/redirects/analytics; inject ANLY-04 PASS | ✓ |
 | Print lots | Templates + batch ZIP still work after auth swap | `TemplateManager.tsx`, `BatchGeneratorModal` + `persistBatch` → POST `/api/plates/batch`; inject SHOP-01 PASS | ✓ |
-| Outcome | Inventory not public; print console still generates lots | SC3 + SC4 verified above; D-07 UI timing needs human | ✓ (API) / ⚠️ (D-07 UX) |
+| Outcome | Inventory not public; print console still generates lots | SC3 + SC4 verified above; D-07 UX confirmed in UAT test 3 | ✓ |
 
 ## Goal Achievement
 
