@@ -1,19 +1,19 @@
 ---
 gsd_state_version: "1.0"
-current_phase: 1
-current_phase_name: Identity spine
-status: verifying
-stopped_at: Completed 01-06-PLAN.md
-last_updated: "2026-09-21T19:20:11.423Z"
+current_phase: 2
+current_phase_name: Public scan hardening
+status: planning
+stopped_at: Phase 1 complete, ready to plan Phase 2
+last_updated: "2026-09-21T20:13:15.618Z"
 last_activity: 2026-09-21
-last_activity_desc: Phase 1 execution started
-state_head: 9436acdfbcb261aa3d20b6077055ad033c76e8cc
+last_activity_desc: Phase 1 complete, transitioned to Phase 2
+state_head: f75bbce921e409a50ef6fdc3b624df890425b14a
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 6
   completed_plans: 6
-  percent: 0
+  percent: 20
 ---
 
 # Project State
@@ -23,22 +23,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-21)
 
 **Core value:** Quem tem a placa (QR ou NFC) chega no destino atual, e o dono certo consegue trocar esse destino e ver as leituras — sem enxergar o inventário dos outros.
-**Current focus:** Phase 1 — Identity spine
+**Current focus:** Phase 2 — Public scan hardening
 
 ## Current Position
 
-Phase: 1 (Identity spine) — EXECUTING
-Plan: 6 of 6
-Status: Phase complete — ready for verification
-Last activity: 2026-09-21 — Phase 1 execution started
+Phase: 2 — Public scan hardening
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-21 — Phase 1 complete, transitioned to Phase 2
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 0
+- Total plans completed: 6
 - Average duration: —
 - Total execution time: 0 hours
 
@@ -46,7 +46,7 @@ Progress: [░░░░░░░░░░] 0%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 1 | 6 | - | - |
 
 **Recent Trend:**
 
@@ -90,7 +90,7 @@ Recent decisions affecting current work:
 - [Phase 1]: AUTH-03 inject restores seed admin password after assertions
 - [Phase 1]: No settings route; Alterar senha only in Header account menu (D-05)
 - [Phase 1]: SHOP-01 inject fixture uses plates/redirects qty 1; assert 2xx (CreateBatch returns 201)
-- [Phase 1]: D-07: batchInFlight defers session clear until BatchGeneratorModal isProcessing false
+- [Phase 1]: Modal de Alterar senha usa createPortal no `document.body` — `sticky` + `backdrop-filter` no Header recortava o formulário
 
 ### Pending Todos
 
@@ -110,6 +110,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-21T19:20:11.386Z
-Stopped at: Completed 01-06-PLAN.md
+Last session: 2026-09-21T20:15:00Z
+Stopped at: Phase 1 complete, ready to plan Phase 2
 Resume file: None

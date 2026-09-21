@@ -27,18 +27,20 @@ Quem tem a placa (QR ou NFC) chega no destino **atual**, e o dono certo consegue
 - ✓ Lote de placas + template com QR carimbado na arte (PNG/ZIP no browser) — existing
 - ✓ Gravação NFC (Web NFC / Chrome Android) do URL `/r/{slug}` + flag `nfcWritten` — existing
 - ✓ Analytics de scan (timestamp, device, UA, source qr/nfc, IP no banco) — existing, incompleto vs v1
-- ✓ Login admin por credencial de ambiente — existing, **inseguro** (token `mock_token_admin_*`)
+- ✓ Login admin por credencial de ambiente — Phase 1 (JWT + cookies; `mock_token_admin_*` rejeitado)
+- ✓ Auth real (sessão/JWT assinado); substituir token prefix-guessable — Phase 1
+- ✓ Troca de senha do próprio operador no Header (AUTH-03) — Phase 1
+- ✓ GETs de inventário/analytics autenticados; IP não aparece na UI — Phase 1
+- ✓ Console de lote/templates continua gerando ZIP após o swap de auth (SHOP-01) — Phase 1
 
 ### Active
 
 - [ ] Cadastro interno de usuários exclusivo do admin (criar, desativar; sem signup público)
-- [ ] Auth real (sessão/JWT assinado); substituir token prefix-guessable
 - [ ] Dono do QR + atribuição pelo admin; isolamento de listagem e NFC
 - [ ] Usuário cria e edita QR URL / WhatsApp / Pix / vCard no recorte dele
 - [ ] Campanhas como agrupamento de QRs (admin vê tudo; usuário só as dele)
 - [ ] Download PNG e SVG do QR (além da arte de placa já existente)
 - [ ] Painel de leituras por data, dispositivo e fonte (QR vs NFC), só no recorte
-- [ ] GETs de inventário/analytics autenticados; IP não aparece na UI
 - [ ] Política de privacidade + exportar/apagar leituras (e contas, no admin)
 - [ ] Página pública `/r/:slug` alinhada a campanha/dono (não fallback SPA em localStorage)
 
@@ -56,9 +58,9 @@ Quem tem a placa (QR ou NFC) chega no destino **atual**, e o dono certo consegue
 
 Brownfield mapeado em `.planning/codebase/` (2026-09-20). Monorepo pnpm/Turbo: PWA React 19 (`apps/plateflow-app`) + API Fastify Clean Architecture (`apps/plateflow-api`) + Postgres/Drizzle (`packages/database`) + tipos (`packages/types`). Host unificado `server.ts`; produção Vercel (`api/index.ts`, `/api/*` e `/r/*`).
 
-O código já entrega o fluxo de gráfica (lote, template, NFC, redirects). Falta **identidade e autorização por dono**, que hoje não existem: um admin único, GETs públicos, analytics com IP exposto, campanha só como `batchIdentifier`, download SVG do QR ausente.
+O código já entrega o fluxo de gráfica (lote, template, NFC, redirects) **e a spine de identidade do v1**: JWT + cookies, inventário/analytics atrás de sessão, IP fora da UI, troca de senha no Header. Falta **autorização por dono** (fases 3–4) e o endurecimento do scan público (fase 2).
 
-Dívida conhecida (não é o core value, mas bloqueia o v1 seguro): token forjável, default `admin@plateflow.com` / `plateflow2026`, CORS aberto, HTML público sem escape, `plates.slug` sem unique.
+Dívida conhecida (não é o core value, mas ainda bloqueia o v1 seguro): HTML público sem escape, CORS/origins a endurecer no scan, `plates.slug` unique só na spine.
 
 ## Constraints
 
@@ -80,7 +82,7 @@ Dívida conhecida (não é o core value, mas bloqueia o v1 seguro): token forjá
 | WhatsApp, Pix, vCard no v1 | Já existem; mesma regra de dono que URL | — Pending |
 | LGPD operacional, não “pesada” | Política + auth + IP oculto + export/delete; sem consentimento no scan | — Pending |
 | Manter lotes/templates da gráfica no admin | Console atual continua sendo o da gráfica | — Pending |
-| Substituir mock token por auth real | Prefix `mock_token_admin_` é bypass | — Pending |
+| Substituir mock token por auth real | Prefix `mock_token_admin_` é bypass | Phase 1 — JWT + cookies HttpOnly |
 | Postgres/Drizzle, não Supabase Auth | Persistência já é `pg`; Auth SDK não é usado | — Pending |
 
 ## Evolution
@@ -101,4 +103,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-21 after initialization*
+*Last updated: 2026-09-21 after Phase 1*
