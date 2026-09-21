@@ -2,17 +2,17 @@
 gsd_state_version: "1.0"
 current_phase: 1
 current_phase_name: Identity spine
-status: executing
-stopped_at: Completed 01-05-PLAN.md
-last_updated: "2026-09-21T19:11:41.402Z"
+status: verifying
+stopped_at: Completed 01-06-PLAN.md
+last_updated: "2026-09-21T19:20:11.423Z"
 last_activity: 2026-09-21
 last_activity_desc: Phase 1 execution started
-state_head: 9bcb63b54fe03cef6eafbc8db731e142402107b7
+state_head: 9436acdfbcb261aa3d20b6077055ad033c76e8cc
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-21)
 
 Phase: 1 (Identity spine) — EXECUTING
 Plan: 6 of 6
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-21 — Phase 1 execution started
 
 Progress: [░░░░░░░░░░] 0%
@@ -63,6 +63,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P03 | 6 min | 3 tasks | 11 files |
 | Phase 01 P04 | 6 min | 3 tasks | 6 files |
 | Phase 01-identity-spine P05 | 6min | 3 tasks | 7 files |
+| Phase 01-identity-spine P06 | 6min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,8 @@ Recent decisions affecting current work:
 - [Phase 1]: Change-password success keeps operator signed in via new cookie pair (D-06)
 - [Phase 1]: AUTH-03 inject restores seed admin password after assertions
 - [Phase 1]: No settings route; Alterar senha only in Header account menu (D-05)
+- [Phase 1]: SHOP-01 inject fixture uses plates/redirects qty 1; assert 2xx (CreateBatch returns 201)
+- [Phase 1]: D-07: batchInFlight defers session clear until BatchGeneratorModal isProcessing false
 
 ### Pending Todos
 
@@ -107,6 +110,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-21T19:11:41.362Z
-Stopped at: Completed 01-05-PLAN.md
+Last session: 2026-09-21T19:20:11.386Z
+Stopped at: Completed 01-06-PLAN.md
 Resume file: None
