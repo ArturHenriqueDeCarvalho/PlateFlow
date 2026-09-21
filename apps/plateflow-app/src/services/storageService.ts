@@ -456,8 +456,32 @@ export const StorageService = {
   },
 
   // ==========================================
-  // BATCH GENERATOR (ATOMIC SUPABASE TRANSACTION)
+  // BATCH GENERATOR (cookie session + apiFetch)
   // ==========================================
+
+  /** Persist a client-composed lot via POST /api/plates/batch (credentials include, refresh once). */
+  async persistBatch(
+    plates: PhysicalPlate[],
+    redirects: DynamicRedirect[],
+  ): Promise<{ plates: PhysicalPlate[]; redirects: DynamicRedirect[] }> {
+    const res = await apiFetch('/api/plates/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plates, redirects }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(
+        (data as { error?: string }).error || `Erro do servidor (${res.status})`,
+      );
+    }
+    const body = await res.json().catch(() => null);
+    if (body && typeof body === 'object' && Array.isArray((body as { plates?: unknown }).plates)) {
+      return body as { plates: PhysicalPlate[]; redirects: DynamicRedirect[] };
+    }
+    return { plates, redirects };
+  },
+
   async generateBatch(params: {
     templateId: string;
     batchIdentifier: string;
@@ -504,16 +528,7 @@ export const StorageService = {
       newPlates.push(plate);
     }
 
-    // Save to server in atomic transaction
-    try {
-      await apiFetch('/api/plates/batch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plates: newPlates, redirects: newRedirects }),
-      });
-    } catch (err) {
-      console.error('Error saving batch to server:', err);
-    }
+    await this.persistBatch(newPlates, newRedirects);
 
     const updatedPlates = [...newPlates, ...existingPlates];
     const updatedRedirects = [...newRedirects, ...existingRedirects];

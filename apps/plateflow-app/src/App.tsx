@@ -163,18 +163,7 @@ export default function App() {
 
   const handleBatchCreated = async (newPlates: PhysicalPlate[], newRedirects: DynamicRedirect[]) => {
     try {
-      const res = await fetch('/api/plates/batch', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ plates: newPlates, redirects: newRedirects }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `Erro do servidor (${res.status})`);
-      }
+      await StorageService.persistBatch(newPlates, newRedirects);
       await loadDataFromBackend();
       showToast(`Lote de ${newPlates.length} placas gerado com sucesso.`);
     } catch (err: any) {
