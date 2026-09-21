@@ -1,10 +1,11 @@
 ---
 phase: "1"
 slug: "identity-spine"
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: "2026-09-21"
+reviewed_at: "2026-09-21"
 ---
 
 # Phase 1 — UI Design Contract
@@ -192,32 +193,48 @@ Do not add “Esqueci a senha” (AUTH-05 v2). Do not add privacy-policy link on
 
 ## UI Considerations
 
-Applicable state considerations resolved: 20 covered, 0 backstop, 0 unresolved
+> Populated by the ui-phase UI-consideration probe (Step 9.5). Empty/error COPY lives in `## Copywriting Contract` — this section is state coverage and references those rows.
+
+Applicable state considerations resolved: 23 covered, 0 backstop, 0 unresolved
 
 | Category | Element(s) | Status | Resolution / Reason |
 |----------|------------|--------|---------------------|
-| empty | LoginScreen form | ✅ covered | Unfilled form shows labels E-mail/Senha and CTA Entrar; no EmptyState component |
-| loading | LoginScreen form | ✅ covered | Entrar Button `isLoading` spinner; fields remain visible and disabled via button disable |
-| error | LoginScreen form | ✅ covered | Rose banner + AlertCircle; copy from Copywriting Contract error row |
-| partial | LoginScreen form | ✅ covered | Native `required` on both fields; browser blocks submit until both filled |
-| long-text | LoginScreen form | ✅ covered | Error banner text wraps (`flex items-center` + span); no ellipsis on the problem string |
-| empty | Change-password form | ✅ covered | Three empty required password Inputs; no empty-illustration |
-| loading | Change-password form | ✅ covered | Alterar senha Button `isLoading`; Cancelar remains available until request starts then both disabled while loading |
-| error | Change-password form | ✅ covered | Same rose banner as LoginScreen plus per-field Input `error` for mismatch |
-| partial | Change-password form | ✅ covered | Client mismatch blocks POST with confirmar error; server current-password failure uses banner |
-| long-text | Change-password form | ✅ covered | API error string wraps in the banner; field errors wrap under the Input (`text-xs`) |
-| loading | Auth gate | ✅ covered | Full-screen Loader2 on zinc-950 until `/me` resolves |
-| error | Auth gate / inventory fetch | ✅ covered | 401 → LoginScreen; never paint cached plates/analytics |
-| empty | Readings list | ✅ covered | Existing EmptyState heading/body in Copywriting Contract |
-| populated | Readings list | ✅ covered | Up to 8 rows; columns placa / dispositivo / data only — no IP |
-| overflow | Readings list | ✅ covered | Existing `overflow-x-auto` table; mobile list slug `truncate` |
-| zero-one-many | Readings list | ✅ covered | Zero = EmptyState; one or many = same row layout; no plural heading change required |
-| overflow | Account menu / email chip | ✅ covered | Email `truncate max-w-[100px]`; menu `min-w-[180px]` with wrapping labels |
-| long-text | Account menu | ✅ covered | Menu item labels are fixed short Portuguese; email truncation is on the chip not the menu |
-| loading | Print-lot ZIP control | ✅ covered | Existing processing copy stays; D-07 forbids unmounting for LoginScreen until download finishes |
-| error | Print-lot ZIP control | ✅ covered | Failed persist already toasts via App; failed refresh after ZIP completes → LoginScreen with no extra copy |
+| empty | E1 LoginScreen form | ✅ covered | Unfilled LoginScreen shows E-mail/Senha fields and CTA Entrar; no EmptyState component (copy: Copywriting empty rows) |
+| loading | E1 LoginScreen form | ✅ covered | Entrar Button `isLoading` spinner; fields remain visible while the request runs |
+| error | E1 LoginScreen form | ✅ covered | Rose banner + AlertCircle; fallback copy from Copywriting error row |
+| partial | E1 LoginScreen form | ✅ covered | Native `required` on both fields; browser blocks submit until both are filled |
+| long-text | E1 LoginScreen form | ✅ covered | Error banner text wraps; no ellipsis on the problem string |
+| empty | E2 Change-password form | ✅ covered | Three empty required password Inputs; no empty illustration (copy: Copywriting empty rows) |
+| loading | E2 Change-password form | ✅ covered | Alterar senha Button `isLoading`; Cancelar available until the request starts, then both disabled |
+| error | E2 Change-password form | ✅ covered | Same rose banner as LoginScreen plus per-field Input `error` for mismatch (copy: Copywriting error row) |
+| partial | E2 Change-password form | ✅ covered | Client mismatch blocks POST with confirmar error; wrong current password uses the banner |
+| long-text | E2 Change-password form | ✅ covered | API error string wraps in the banner; field errors wrap under the Input (`text-xs`) |
+| overflow | E3 Header account menu | ✅ covered | Email prefix `truncate max-w-[100px]`; menu `min-w-[180px]` with wrapping labels |
+| long-text | E3 Header account menu | ✅ covered | Menu item labels are fixed short Portuguese; truncation is on the chip, not the menu |
+| empty | E4 Readings list | ✅ covered | Existing EmptyState; heading/body from Copywriting empty rows |
+| loading | E4 Readings list | ✅ covered | No readings skeleton this phase; lists paint only after `/me` succeeds (E5 spinner) |
+| error | E4 Readings list | ✅ covered | GET 401 → `logout()` + LoginScreen; never substitute `localStorage` inventory/analytics into the lists |
+| populated | E4 Readings list | ✅ covered | Up to 8 rows; columns Placa / Dispositivo / Data e Horário only — never render `log.ip` |
+| partial | E4 Readings list | ✅ covered | Missing device → neutral Badge; never fill the gap with IP |
+| overflow | E4 Readings list | ✅ covered | Existing `overflow-x-auto` table; mobile list slug `truncate` |
+| zero-one-many | E4 Readings list | ✅ covered | Zero = EmptyState; one or many = same row layout; no plural heading change |
+| loading | E5 Auth gate | ✅ covered | Full-screen `Loader2` on zinc-950 until `/me` resolves; no Header/inventory until then |
+| error | E5 Auth gate | ✅ covered | 401 → LoginScreen; never paint cached plates/analytics |
+| loading | E6 Print-lot ZIP control | ✅ covered | Keep BatchGeneratorModal mounted and `isProcessing` until the blob download starts; never swap to LoginScreen while the progress bar is visible |
+| error | E6 Print-lot ZIP control | ✅ covered | Failed persist toasts via App; failed refresh after ZIP completes → LoginScreen with no extra copy |
 
-Dismissed (not in table): media empty/loading N/A — no new media. Nav loading N/A — Header tabs are client-local. Account menu empty N/A — always two items when `user` is set.
+Dismissed (audit trail — not lifted into must_haves):
+
+| Category | Element(s) | Status | Reason |
+|----------|------------|--------|--------|
+| empty | E3 Header account menu | dismissed | Always two items when `user` is set; not a data collection |
+| loading | E3 Header account menu | dismissed | Client-local disclosure; no fetch to populate the menu |
+| error | E3 Header account menu | dismissed | Menu open does not load remote data; password/session errors live on E2/E5 |
+| populated | E3 Header account menu | dismissed | Fixed Alterar senha + Sair, not a variable collection |
+| partial | E3 Header account menu | dismissed | Both items always present when `user` is set |
+| zero-one-many | E3 Header account menu | dismissed | Fixed two items; not a 0/1/N list |
+| long-text | E5 Auth gate | dismissed | Auth gate has no copy — spinner only |
+| long-text | E6 Print-lot ZIP control | dismissed | Frozen BatchGeneratorModal copy; this phase does not restyle progress text |
 
 ---
 
@@ -231,12 +248,12 @@ Dismissed (not in table): media empty/loading N/A — no new media. Nav loading 
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
-- [ ] Dimension 7 Inventory Provenance: PASS
+- [x] Dimension 1 Copywriting: FLAG (non-blocking — modal dismiss **Cancelar** is a single-word generic label)
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
+- [x] Dimension 7 Inventory Provenance: PASS
 
-**Approval:** pending
+**Approval:** approved 2026-09-21
