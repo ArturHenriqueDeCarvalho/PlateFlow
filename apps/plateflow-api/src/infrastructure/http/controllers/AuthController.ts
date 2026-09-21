@@ -1,11 +1,21 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { LoginUseCase } from '../../../core/use-cases/auth/LoginUseCase.js';
+import type { RefreshSessionUseCase } from '../../../core/use-cases/auth/RefreshSessionUseCase.js';
+import type { LogoutUseCase } from '../../../core/use-cases/auth/LogoutUseCase.js';
 import type { ITokenIssuer } from '../../../core/ports/ITokenIssuer.js';
-import { accessExpiresAt, setSessionCookies } from '../../auth/sessionCookies.js';
+import {
+  ACCESS_COOKIE,
+  REFRESH_COOKIE,
+  accessExpiresAt,
+  clearSessionCookies,
+  setSessionCookies,
+} from '../../auth/sessionCookies.js';
 
 export class AuthController {
   constructor(
     private loginUseCase: LoginUseCase,
+    private refreshSessionUseCase: RefreshSessionUseCase,
+    private logoutUseCase: LogoutUseCase,
     private tokenIssuer: ITokenIssuer,
   ) {}
 
@@ -34,6 +44,55 @@ export class AuthController {
     } catch (err: any) {
       return reply.status(401).send({ error: err.message || 'Credenciais inválidas.' });
     }
+  }
+
+  async refresh(req: FastifyRequest, reply: FastifyReply) {
+    try {
+      const opaque = req.cookies?.[REFRESH_COOKIE] || '';
+      const result = await this.refreshSessionUseCase.execute(opaque);
+      const accessExp = accessExpiresAt(result.sessionExpiresAt);
+      const accessToken = await this.tokenIssuer.signAccess(
+        {
+          sub: result.user.id,
+          role: result.user.role,
+          email: result.user.email,
+          sid: result.sessionId,
+        },
+        accessExp,
+      );
+      setSessionCookies(reply, {
+        accessToken,
+        refreshToken: result.refreshToken,
+        accessExpiresAt: accessExp,
+        sessionExpiresAt: result.sessionExpiresAt,
+      });
+      return reply.send({ user: result.user });
+    } catch (err: any) {
+      clearSessionCookies(reply);
+      return reply.status(401).send({ error: err.message || 'Sessão inválida ou expirada.' });
+    }
+  }
+
+  async logout(req: FastifyRequest, reply: FastifyReply) {
+    const opaqueRefreshToken = req.cookies?.[REFRESH_COOKIE] || null;
+    let sessionId: string | null = null;
+    let userId: string | null = null;
+    try {
+      await req.jwtVerify({ onlyCookie: true });
+      sessionId = req.user?.sid ?? null;
+      userId = req.user?.sub ?? null;
+    } catch {
+      // Access may already be expired; still revoke via refresh cookie when present.
+    }
+
+    await this.logoutUseCase.execute({ opaqueRefreshToken, sessionId, userId });
+    clearSessionCookies(reply);
+    // Ensure inject clients see Max-Age=0 even if clearCookie shape differs
+    if (!reply.getHeader('set-cookie')) {
+      reply.setCookie(ACCESS_COOKIE, '', { path: '/', maxAge: 0 });
+      reply.setCookie(REFRESH_COOKIE, '', { path: '/api/auth', maxAge: 0 });
+    }
+    return reply.send({ ok: true });
   }
 
   async me(req: FastifyRequest, reply: FastifyReply) {

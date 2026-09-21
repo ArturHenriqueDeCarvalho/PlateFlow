@@ -6,6 +6,8 @@ import { DrizzleRefreshSessionRepository } from '../../database/DrizzleRefreshSe
 import { ScryptPasswordHasher } from '../../crypto/ScryptPasswordHasher.js';
 import { FastifyTokenIssuer } from '../../auth/FastifyTokenIssuer.js';
 import { LoginUseCase } from '../../../core/use-cases/auth/LoginUseCase.js';
+import { RefreshSessionUseCase } from '../../../core/use-cases/auth/RefreshSessionUseCase.js';
+import { LogoutUseCase } from '../../../core/use-cases/auth/LogoutUseCase.js';
 
 const loginBodySchema = {
   type: 'object',
@@ -23,6 +25,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   const hasher = new ScryptPasswordHasher();
   const controller = new AuthController(
     new LoginUseCase(userRepo, hasher, refreshRepo),
+    new RefreshSessionUseCase(userRepo, refreshRepo),
+    new LogoutUseCase(refreshRepo),
     new FastifyTokenIssuer(app),
   );
 
@@ -31,5 +35,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     { schema: { body: loginBodySchema } },
     (req: any, reply) => controller.login(req, reply),
   );
+  app.post('/refresh', (req, reply) => controller.refresh(req, reply));
+  app.post('/logout', (req, reply) => controller.logout(req, reply));
   app.get('/me', { preHandler: [requireAuth] }, (req, reply) => controller.me(req, reply));
 };

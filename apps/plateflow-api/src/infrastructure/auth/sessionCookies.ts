@@ -37,3 +37,19 @@ export function setSessionCookies(
     expires: params.sessionExpiresAt,
   });
 }
+
+export function clearSessionCookies(reply: FastifyReply): void {
+  const secure = cookieSecure();
+  reply.clearCookie(ACCESS_COOKIE, {
+    path: '/',
+    httpOnly: true,
+    secure,
+    sameSite: 'lax',
+  });
+  reply.clearCookie(REFRESH_COOKIE, {
+    path: '/api/auth',
+    httpOnly: true,
+    secure,
+    sameSite: 'lax',
+  });
+}

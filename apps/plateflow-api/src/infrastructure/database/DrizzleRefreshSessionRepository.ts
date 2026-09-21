@@ -20,6 +20,16 @@ export class DrizzleRefreshSessionRepository implements IRefreshSessionRepositor
     return this.mapRow(rows[0]);
   }
 
+  async findById(id: string): Promise<RefreshSessionRecord | null> {
+    const rows = await db
+      .select()
+      .from(refresh_sessions)
+      .where(eq(refresh_sessions.id, id))
+      .limit(1);
+    if (!rows.length) return null;
+    return this.mapRow(rows[0]);
+  }
+
   async findByTokenHash(tokenHash: string): Promise<RefreshSessionRecord | null> {
     const rows = await db
       .select()
@@ -28,6 +38,13 @@ export class DrizzleRefreshSessionRepository implements IRefreshSessionRepositor
       .limit(1);
     if (!rows.length) return null;
     return this.mapRow(rows[0]);
+  }
+
+  async rotateTokenHash(id: string, tokenHash: string): Promise<void> {
+    await db
+      .update(refresh_sessions)
+      .set({ token_hash: tokenHash })
+      .where(eq(refresh_sessions.id, id));
   }
 
   async revokeById(id: string): Promise<void> {
