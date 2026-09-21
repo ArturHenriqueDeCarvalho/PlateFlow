@@ -5,6 +5,7 @@
     "ADMIN_EMAIL",
     "ADMIN_PASSWORD",
     "JWT_SECRET",
+    "APP_ORIGIN",
     "PORT",
     "NODE_ENV"
   ],

@@ -59,9 +59,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           }
         >
           {error && (
-            <div className="mb-4 flex items-center gap-2 rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-xs text-rose-300">
+            <div className="mb-4 flex items-start gap-2 rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-xs text-rose-300">
               <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
-              <span>{error}</span>
+              <span className="min-w-0 whitespace-normal break-words">{error}</span>
             </div>
           )}
 

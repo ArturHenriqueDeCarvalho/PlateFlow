@@ -1,6 +1,8 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import formbody from '@fastify/formbody';
+import cookie from '@fastify/cookie';
+import jwt from '@fastify/jwt';
 import { db, seedDefaultTemplates } from '@plateflow/database';
 import { authRoutes } from './routes/authRoutes.js';
 import { plateRoutes } from './routes/plateRoutes.js';
@@ -8,8 +10,19 @@ import { redirectRoutes } from './routes/redirectRoutes.js';
 import { templateRoutes } from './routes/templateRoutes.js';
 import { analyticsRoutes } from './routes/analyticsRoutes.js';
 import { publicRedirectRoutes } from './routes/publicRedirectRoutes.js';
+import { ACCESS_COOKIE } from '../auth/sessionCookies.js';
+import { assertIdentityEnv, seedAdminUser } from '../auth/seedAdminUser.js';
+
+function parseAppOrigins(): string[] {
+  return (process.env.APP_ORIGIN || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
 
 export function createFastifyApp() {
+  assertIdentityEnv();
+
   const app = Fastify({
     logger: process.env.NODE_ENV !== 'test',
     trustProxy: true,
@@ -27,14 +40,34 @@ export function createFastifyApp() {
     reply.send(error);
   });
 
-  // Plugins
+  const allowedOrigins = parseAppOrigins();
   app.register(cors, {
-    origin: true,
+    origin: (origin, cb) => {
+      if (!origin) {
+        cb(null, true);
+        return;
+      }
+      cb(null, allowedOrigins.includes(origin));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   });
 
   app.register(formbody, { bodyLimit: 10 * 1024 * 1024 });
+
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    throw new Error('JWT_SECRET is required.');
+  }
+
+  app.register(cookie);
+  app.register(jwt, {
+    secret: jwtSecret,
+    cookie: {
+      cookieName: ACCESS_COOKIE,
+      signed: false,
+    },
+  });
 
   // Health check endpoint
   app.get('/api/health', async (_req, reply) => {
@@ -54,10 +87,18 @@ export function createFastifyApp() {
     }
   });
 
-  // Seed default templates in background if database URL is configured
+  // Seed default templates and admin in background if database URL is configured
   if (process.env.DATABASE_URL) {
     seedDefaultTemplates().catch((err) => {
       console.warn('[Seed warning]:', err.message);
+    });
+    app.addHook('onReady', async () => {
+      try {
+        await seedAdminUser();
+      } catch (err: any) {
+        console.warn('[Seed warning]:', err.message);
+        if (process.env.NODE_ENV === 'test') throw err;
+      }
     });
   }
 

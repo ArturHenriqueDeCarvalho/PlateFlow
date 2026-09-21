@@ -82,7 +82,7 @@ export interface AnalyticsLog {
 }
 
 export interface AuthUser {
-  id?: string;
+  id: string;
   email: string;
   name?: string;
   role: 'admin' | 'user';

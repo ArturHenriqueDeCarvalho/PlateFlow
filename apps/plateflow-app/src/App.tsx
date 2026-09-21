@@ -41,7 +41,7 @@ import { Toast, EmptyState, Button, Badge, Card, PageHeader } from './components
 
 export default function App() {
   // Authentication & Session state
-  const [user, setUser] = useState<AuthUser | null>(() => StorageService.getAuthUser());
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -163,14 +163,11 @@ export default function App() {
 
   const handleBatchCreated = async (newPlates: PhysicalPlate[], newRedirects: DynamicRedirect[]) => {
     try {
-      const token =
-        localStorage.getItem('nfc_qr_auth_token_v2') ||
-        localStorage.getItem('plateflow_auth_token');
       const res = await fetch('/api/plates/batch', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ plates: newPlates, redirects: newRedirects }),
       });

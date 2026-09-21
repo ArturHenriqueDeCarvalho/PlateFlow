@@ -1,40 +1,46 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
+import type { LoginUseCase } from '../../../core/use-cases/auth/LoginUseCase.js';
+import type { ITokenIssuer } from '../../../core/ports/ITokenIssuer.js';
+import { accessExpiresAt, setSessionCookies } from '../../auth/sessionCookies.js';
 
 export class AuthController {
+  constructor(
+    private loginUseCase: LoginUseCase,
+    private tokenIssuer: ITokenIssuer,
+  ) {}
+
   async login(req: FastifyRequest<{ Body: { email?: string; password?: string } }>, reply: FastifyReply) {
-    const { email, password } = req.body || {};
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@plateflow.com';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'plateflow2026';
-
-    if (email === adminEmail && password === adminPassword) {
-      const token = `mock_token_admin_${Date.now()}`;
-      return reply.send({
-        token,
-        user: {
-          email,
-          name: 'Administrador Gráfica',
-          role: 'admin',
+    try {
+      const email = req.body?.email || '';
+      const password = req.body?.password || '';
+      const result = await this.loginUseCase.execute(email, password);
+      const accessExp = accessExpiresAt(result.sessionExpiresAt);
+      const accessToken = await this.tokenIssuer.signAccess(
+        {
+          sub: result.user.id,
+          role: result.user.role,
+          email: result.user.email,
+          sid: result.sessionId,
         },
+        accessExp,
+      );
+      setSessionCookies(reply, {
+        accessToken,
+        refreshToken: result.refreshToken,
+        accessExpiresAt: accessExp,
+        sessionExpiresAt: result.sessionExpiresAt,
       });
+      return reply.send({ user: result.user });
+    } catch (err: any) {
+      return reply.status(401).send({ error: err.message || 'Credenciais inválidas.' });
     }
-
-    return reply.status(401).send({ error: 'Credenciais inválidas.' });
   }
 
   async me(req: FastifyRequest, reply: FastifyReply) {
-    const authHeader = req.headers.authorization;
-    const token = authHeader?.replace(/^Bearer\s+/i, '') || (req.headers['x-auth-token'] as string);
-
-    if (token && token.startsWith('mock_token_admin_')) {
-      return reply.send({
-        user: {
-          email: process.env.ADMIN_EMAIL || 'admin@plateflow.com',
-          name: 'Administrador Gráfica',
-          role: 'admin',
-        },
-      });
+    const user = req.authUser;
+    if (!user?.id) {
+      return reply.status(401).send({ error: 'Sessão inválida ou expirada.' });
     }
-
-    return reply.status(401).send({ error: 'Sessão inválida ou expirada.' });
+    return reply.send({ user });
   }
 }

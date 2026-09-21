@@ -21,7 +21,7 @@ export const plateRoutes: FastifyPluginAsync = async (app) => {
     new DeletePlateUseCase(plateRepo, redirectRepo)
   );
 
-  app.get('/', (req, reply) => controller.getAll(req, reply));
+  app.get('/', { preHandler: [requireAuth] }, (req, reply) => controller.getAll(req, reply));
   app.post('/batch', { preHandler: [requireAuth] }, (req: any, reply) => controller.createBatch(req, reply));
   app.post('/bulk-delete', { preHandler: [requireAuth] }, (req: any, reply) => controller.deleteBatch(req, reply));
   app.put('/:id', { preHandler: [requireAuth] }, (req: any, reply) => controller.update(req, reply));

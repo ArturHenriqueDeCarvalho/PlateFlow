@@ -66,6 +66,27 @@ export const analytics = pgTable('analytics', {
   timestamp: timestamp('timestamp', { withTimezone: true }).defaultNow(),
 });
 
+export const users = pgTable('users', {
+  id: text('id').primaryKey(),
+  email: text('email').unique().notNull(),
+  name: text('name'),
+  password_hash: text('password_hash').notNull(),
+  role: text('role').notNull(),
+  active: boolean('active').default(true).notNull(),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+export const refresh_sessions = pgTable('refresh_sessions', {
+  id: text('id').primaryKey(),
+  user_id: text('user_id').notNull().references(() => users.id),
+  token_hash: text('token_hash').unique().notNull(),
+  session_expires_at: timestamp('session_expires_at', { withTimezone: true }).notNull(),
+  expires_at: timestamp('expires_at', { withTimezone: true }).notNull(),
+  revoked_at: timestamp('revoked_at', { withTimezone: true }),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
 export type TemplateSelect = typeof templates.$inferSelect;
 export type TemplateInsert = typeof templates.$inferInsert;
 export type RedirectSelect = typeof redirects.$inferSelect;
@@ -74,3 +95,7 @@ export type PlateSelect = typeof plates.$inferSelect;
 export type PlateInsert = typeof plates.$inferInsert;
 export type AnalyticsSelect = typeof analytics.$inferSelect;
 export type AnalyticsInsert = typeof analytics.$inferInsert;
+export type UserSelect = typeof users.$inferSelect;
+export type UserInsert = typeof users.$inferInsert;
+export type RefreshSessionSelect = typeof refresh_sessions.$inferSelect;
+export type RefreshSessionInsert = typeof refresh_sessions.$inferInsert;

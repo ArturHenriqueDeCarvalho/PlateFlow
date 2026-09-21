@@ -16,6 +16,22 @@ const STORAGE_KEYS = {
   AUTH_USER: 'nfc_qr_auth_user_v2',
 };
 
+const LEGACY_TOKEN_KEYS = ['nfc_qr_auth_token_v2', 'plateflow_auth_token', STORAGE_KEYS.AUTH_TOKEN];
+
+function forgetLegacyTokens(): void {
+  try {
+    for (const key of LEGACY_TOKEN_KEYS) {
+      localStorage.removeItem(key);
+    }
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function apiFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  return fetch(input, { ...init, credentials: 'include' });
+}
+
 function safeGetItem<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
@@ -34,18 +50,14 @@ function safeSetItem<T>(key: string, value: T): void {
   }
 }
 
-function getAuthHeader(): Record<string, string> {
-  const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
 export const StorageService = {
   // ==========================================
   // AUTHENTICATION (SUPABASE / ADMIN)
   // ==========================================
   async login(email: string, password: string): Promise<{ success: boolean; user?: AuthUser; error?: string }> {
+    forgetLegacyTokens();
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await apiFetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -54,7 +66,7 @@ export const StorageService = {
       if (!res.ok) {
         return { success: false, error: data.error || 'Falha ao autenticar.' };
       }
-      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token);
+      forgetLegacyTokens();
       localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(data.user));
       return { success: true, user: data.user };
     } catch (err: any) {
@@ -63,7 +75,7 @@ export const StorageService = {
   },
 
   logout(): void {
-    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    forgetLegacyTokens();
     localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
   },
 
@@ -72,20 +84,21 @@ export const StorageService = {
   },
 
   async verifyAuth(): Promise<AuthUser | null> {
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
-    if (!token) return null;
+    forgetLegacyTokens();
     try {
-      const res = await fetch('/api/auth/me', {
-        headers: { ...getAuthHeader() },
-      });
+      const res = await apiFetch('/api/auth/me');
       if (res.ok) {
         const data = await res.json();
-        return data.user;
+        if (data.user) {
+          localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(data.user));
+          return data.user;
+        }
       }
       this.logout();
       return null;
     } catch {
-      return this.getAuthUser();
+      this.logout();
+      return null;
     }
   },
 
@@ -98,7 +111,7 @@ export const StorageService = {
 
   async fetchTemplates(): Promise<PlateTemplate[]> {
     try {
-      const res = await fetch('/api/templates');
+      const res = await apiFetch('/api/templates');
       if (res.ok) {
         const templates: PlateTemplate[] = await res.json();
         safeSetItem(STORAGE_KEYS.TEMPLATES, templates);
@@ -111,9 +124,9 @@ export const StorageService = {
   },
 
   async saveTemplate(template: PlateTemplate): Promise<PlateTemplate[]> {
-    const res = await fetch('/api/templates', {
+    const res = await apiFetch('/api/templates', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(template),
     });
 
@@ -135,9 +148,8 @@ export const StorageService = {
   },
 
   async deleteTemplate(id: string): Promise<PlateTemplate[]> {
-    const res = await fetch(`/api/templates/${id}`, {
+    const res = await apiFetch(`/api/templates/${id}`, {
       method: 'DELETE',
-      headers: { ...getAuthHeader() },
     });
 
     if (!res.ok) {
@@ -160,7 +172,7 @@ export const StorageService = {
 
   async fetchRedirects(): Promise<DynamicRedirect[]> {
     try {
-      const res = await fetch('/api/redirects');
+      const res = await apiFetch('/api/redirects');
       if (res.ok) {
         const redirects: DynamicRedirect[] = await res.json();
         safeSetItem(STORAGE_KEYS.REDIRECTS, redirects);
@@ -182,9 +194,9 @@ export const StorageService = {
     const updatedRedirect: DynamicRedirect = { ...redirect, updatedAt: now };
 
     try {
-      await fetch(`/api/redirects/${encodeURIComponent(redirect.slug)}`, {
+      await apiFetch(`/api/redirects/${encodeURIComponent(redirect.slug)}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedRedirect),
       });
     } catch (err) {
@@ -210,7 +222,11 @@ export const StorageService = {
 
   async fetchPlates(): Promise<PhysicalPlate[]> {
     try {
-      const res = await fetch('/api/plates');
+      const res = await apiFetch('/api/plates');
+      if (res.status === 401) {
+        this.logout();
+        return [];
+      }
       if (res.ok) {
         const plates: PhysicalPlate[] = await res.json();
         safeSetItem(STORAGE_KEYS.PLATES, plates);
@@ -224,9 +240,9 @@ export const StorageService = {
 
   async savePlate(plate: PhysicalPlate): Promise<PhysicalPlate[]> {
     try {
-      await fetch(`/api/plates/${plate.id}`, {
+      await apiFetch(`/api/plates/${plate.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nfcWritten: plate.nfcWritten,
           customerNotes: plate.customerNotes,
@@ -261,9 +277,9 @@ export const StorageService = {
     }
 
     try {
-      await fetch(`/api/plates/${plateId}`, {
+      await apiFetch(`/api/plates/${plateId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nfcWritten: written }),
       });
     } catch (err) {
@@ -285,9 +301,8 @@ export const StorageService = {
     }
 
     try {
-      await fetch(`/api/plates/${id}`, {
+      await apiFetch(`/api/plates/${id}`, {
         method: 'DELETE',
-        headers: { ...getAuthHeader() },
       });
     } catch (err) {
       console.error('Error deleting plate on server:', err);
@@ -312,9 +327,9 @@ export const StorageService = {
     }
 
     try {
-      await fetch('/api/plates/bulk-delete', {
+      await apiFetch('/api/plates/bulk-delete', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids }),
       });
     } catch (err) {
@@ -375,9 +390,9 @@ export const StorageService = {
 
     // Save to server in atomic transaction
     try {
-      await fetch('/api/plates/batch', {
+      await apiFetch('/api/plates/batch', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plates: newPlates, redirects: newRedirects }),
       });
     } catch (err) {
@@ -402,7 +417,7 @@ export const StorageService = {
 
   async fetchAnalytics(): Promise<AnalyticsLog[]> {
     try {
-      const res = await fetch('/api/analytics');
+      const res = await apiFetch('/api/analytics');
       if (res.ok) {
         const logs: AnalyticsLog[] = await res.json();
         safeSetItem(STORAGE_KEYS.ANALYTICS, logs);
@@ -440,7 +455,7 @@ export const StorageService = {
 
     // Send analytics to backend
     try {
-      await fetch('/api/analytics', {
+      await apiFetch('/api/analytics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
