@@ -119,48 +119,48 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | — | Pending |
-| AUTH-02 | — | Pending |
-| AUTH-03 | — | Pending |
-| OWN-01 | — | Pending |
-| OWN-02 | — | Pending |
-| OWN-03 | — | Pending |
-| OWN-04 | — | Pending |
-| DEST-01 | — | Pending |
-| DEST-02 | — | Pending |
-| DEST-03 | — | Pending |
-| DEST-04 | — | Pending |
-| DEST-05 | — | Pending |
-| SCAN-01 | — | Pending |
-| SCAN-02 | — | Pending |
-| SCAN-03 | — | Pending |
-| SCAN-04 | — | Pending |
-| NFC-01 | — | Pending |
-| NFC-02 | — | Pending |
-| NFC-03 | — | Pending |
-| NFC-04 | — | Pending |
-| DL-01 | — | Pending |
-| DL-02 | — | Pending |
-| DL-03 | — | Pending |
-| DL-04 | — | Pending |
-| CAMP-01 | — | Pending |
-| CAMP-02 | — | Pending |
-| CAMP-03 | — | Pending |
-| CAMP-04 | — | Pending |
-| ANLY-01 | — | Pending |
-| ANLY-02 | — | Pending |
-| ANLY-03 | — | Pending |
-| ANLY-04 | — | Pending |
-| PRIV-01 | — | Pending |
-| PRIV-02 | — | Pending |
-| PRIV-03 | — | Pending |
-| SHOP-01 | — | Pending |
+| AUTH-01 | Phase 1 | Pending |
+| AUTH-02 | Phase 3 | Pending |
+| AUTH-03 | Phase 1 | Pending |
+| OWN-01 | Phase 3 | Pending |
+| OWN-02 | Phase 3 | Pending |
+| OWN-03 | Phase 3 | Pending |
+| OWN-04 | Phase 3 | Pending |
+| DEST-01 | Phase 4 | Pending |
+| DEST-02 | Phase 4 | Pending |
+| DEST-03 | Phase 4 | Pending |
+| DEST-04 | Phase 4 | Pending |
+| DEST-05 | Phase 4 | Pending |
+| SCAN-01 | Phase 2 | Pending |
+| SCAN-02 | Phase 2 | Pending |
+| SCAN-03 | Phase 2 | Pending |
+| SCAN-04 | Phase 2 | Pending |
+| NFC-01 | Phase 4 | Pending |
+| NFC-02 | Phase 4 | Pending |
+| NFC-03 | Phase 4 | Pending |
+| NFC-04 | Phase 4 | Pending |
+| DL-01 | Phase 4 | Pending |
+| DL-02 | Phase 4 | Pending |
+| DL-03 | Phase 4 | Pending |
+| DL-04 | Phase 4 | Pending |
+| CAMP-01 | Phase 5 | Pending |
+| CAMP-02 | Phase 5 | Pending |
+| CAMP-03 | Phase 5 | Pending |
+| CAMP-04 | Phase 5 | Pending |
+| ANLY-01 | Phase 5 | Pending |
+| ANLY-02 | Phase 5 | Pending |
+| ANLY-03 | Phase 5 | Pending |
+| ANLY-04 | Phase 1 | Pending |
+| PRIV-01 | Phase 5 | Pending |
+| PRIV-02 | Phase 5 | Pending |
+| PRIV-03 | Phase 5 | Pending |
+| SHOP-01 | Phase 1 | Pending |
 
 **Coverage:**
 - v1 requirements: 36 total
-- Mapped to phases: 0
-- Unmapped: 36 ⚠️ (filled by `/gsd-new-project` roadmap)
+- Mapped to phases: 36
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-09-21*
-*Last updated: 2026-09-21 after initial definition*
+*Last updated: 2026-09-21 after roadmap creation*
