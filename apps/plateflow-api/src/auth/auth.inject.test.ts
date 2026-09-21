@@ -104,6 +104,11 @@ it('AUTH-01 login sets cookies and /me', async () => {
   assertHttpOnlyCookie(loginRes, 'plateflow_access');
   assertHttpOnlyCookie(loginRes, 'plateflow_refresh');
 
+  const access = cookieLine(loginRes, 'plateflow_access');
+  const refresh = cookieLine(loginRes, 'plateflow_refresh');
+  assert.match(String(access), /;\s*SameSite=Lax/i, 'access cookie must be SameSite=Lax');
+  assert.match(String(refresh), /;\s*SameSite=Lax/i, 'refresh cookie must be SameSite=Lax');
+
   const me = await app.inject({
     method: 'GET',
     url: '/api/auth/me',
@@ -303,6 +308,8 @@ it('ANLY-04 analytics 401 and no ip', async () => {
 });
 
 it('ANLY-04 inventory GETs 401', async () => {
+  const plates = await app.inject({ method: 'GET', url: '/api/plates' });
+  assert.equal(plates.statusCode, 401);
   const templates = await app.inject({ method: 'GET', url: '/api/templates' });
   assert.equal(templates.statusCode, 401);
   const redirects = await app.inject({ method: 'GET', url: '/api/redirects' });
@@ -360,6 +367,19 @@ it('SHOP-01 batch persist cookie gate', async () => {
     authed.statusCode >= 200 && authed.statusCode < 300,
     `expected 2xx with cookies, got ${authed.statusCode}: ${authed.body}`,
   );
+
+  const listed = await app.inject({
+    method: 'GET',
+    url: '/api/plates',
+    cookies: cookieJarFrom(loginRes),
+  });
+  assert.equal(listed.statusCode, 200, 'cookie session must unlock GET /api/plates after persist');
+  const plates = listed.json() as Array<{ slug?: string }>;
+  assert.ok(Array.isArray(plates), 'GET /api/plates must return an array');
+  assert.ok(
+    plates.some((plate) => plate.slug === slug),
+    `batch plate ${slug} must appear on GET /api/plates`,
+  );
 });
 
 it('SCAN safety public /r/:slug', async () => {
@@ -403,5 +423,58 @@ it('AUTH-01 foreign Origin mutation 403', async () => {
     const body = res.json() as { error?: unknown };
     assert.equal(typeof body.error, 'string');
     assert.match(String(body.error), /[áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ]|não|Não|origem|proibid/i);
+  }
+});
+
+it('AUTH-01 cookie session unlocks GET /api/plates', async () => {
+  const loginRes = await login();
+  assert.equal(loginRes.statusCode, 200);
+  const res = await app.inject({
+    method: 'GET',
+    url: '/api/plates',
+    cookies: cookieJarFrom(loginRes),
+  });
+  assert.equal(res.statusCode, 200);
+  assert.ok(Array.isArray(res.json()), 'GET /api/plates must return a JSON array');
+});
+
+it('AUTH-01 logout revokes refresh', async () => {
+  const loginRes = await login();
+  const cookies = cookieJarFrom(loginRes);
+  assert.ok(cookies.plateflow_refresh, 'login must set plateflow_refresh');
+
+  const logoutRes = await app.inject({
+    method: 'POST',
+    url: '/api/auth/logout',
+    cookies,
+  });
+  assert.equal(logoutRes.statusCode, 200);
+
+  const staleRefresh = await app.inject({
+    method: 'POST',
+    url: '/api/auth/refresh',
+    cookies: { plateflow_refresh: cookies.plateflow_refresh },
+  });
+  assert.equal(staleRefresh.statusCode, 401, 'logout must revoke the refresh row');
+});
+
+it('AUTH-01 forged bearer 401 on PUT redirects', async () => {
+  const res = await app.inject({
+    method: 'PUT',
+    url: '/api/redirects/forged-slug',
+    headers: { authorization: FORGED_BEARER, 'content-type': 'application/json' },
+    payload: { title: 'forged' },
+  });
+  assert.equal(res.statusCode, 401);
+});
+
+it('ANLY-04 authed inventory GETs succeed without ip', async () => {
+  const loginRes = await login();
+  const cookies = cookieJarFrom(loginRes);
+
+  for (const url of ['/api/plates', '/api/templates', '/api/redirects']) {
+    const res = await app.inject({ method: 'GET', url, cookies });
+    assert.equal(res.statusCode, 200, `${url} must succeed with a cookie session`);
+    assertNoIpKey(res.json(), url);
   }
 });
